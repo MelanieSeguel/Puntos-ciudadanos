@@ -2,7 +2,7 @@
 
 Plataforma de fidelización cívica y ecológica desarrollada con Node.js, Express y PostgreSQL.
 
-## 🚀 Tecnologías
+## Tecnologías
 
 - **Node.js** (v20+)
 - **Express.js** - Framework web
@@ -13,13 +13,13 @@ Plataforma de fidelización cívica y ecológica desarrollada con Node.js, Expre
 - **bcrypt** - Hash de contraseñas
 - **JWT** - Autenticación
 
-## 📋 Prerrequisitos
+## Prerrequisitos
 
 - Node.js v20 o superior
 - Docker y Docker Compose
 - Git
 
-## 🛠️ Instalación
+## Instalación
 
 ### 1. Clonar el repositorio
 
@@ -67,7 +67,7 @@ npm run prisma:seed
 npm run dev
 ```
 
-## 🗄️ Estructura de la Base de Datos
+## Estructura de la Base de Datos
 
 ### Modelos principales:
 
@@ -85,7 +85,7 @@ User (1:N) News
 Benefit (1:N) PointTransactions
 ```
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### Autenticación
 ```
@@ -105,7 +105,7 @@ GET /health                         - Estado del servidor
 GET /api/v1                         - Info de la API
 ```
 
-## 🔒 Seguridad
+## Seguridad
 
 ### Protecciones Implementadas
 
@@ -133,7 +133,7 @@ import { updateWalletBalance, updateBenefitStock } from './services/database.ser
 await updateWalletBalance(walletId, -100, currentVersion);
 ```
 
-## 🐳 Comandos Docker
+## Comandos Docker
 
 ```bash
 # Levantar servicios
@@ -155,7 +155,7 @@ docker exec -it puntos_ciudadanos_app sh
 docker exec -it puntos_ciudadanos_db psql -U puntos_user -d puntos_ciudadanos
 ```
 
-## 🔧 Scripts NPM
+## Scripts NPM
 
 ```bash
 npm run dev              # Modo desarrollo con watch
@@ -166,7 +166,7 @@ npm run prisma:studio    # Abrir Prisma Studio (GUI)
 npm run prisma:seed      # Poblar BD con datos de prueba
 ```
 
-## 📊 Prisma Studio
+## Prisma Studio
 
 Para explorar la base de datos visualmente:
 
@@ -176,7 +176,7 @@ npm run prisma:studio
 
 Se abrirá en `http://localhost:5555`
 
-## 🧪 Datos de Prueba (Seed)
+## Datos de Prueba (Seed)
 
 Después de ejecutar `npm run prisma:seed`:
 
@@ -188,7 +188,7 @@ Después de ejecutar `npm run prisma:seed`:
 - Email: `maria@example.com` / Password: `user123`
 - Email: `juan@example.com` / Password: `user123`
 
-## 📝 Próximos Pasos (Semana 3+)
+## Próximos Pasos (Semana 3+)
 
 - [x] Implementar módulo de autenticación (registro, login, JWT)
 - [ ] CRUD de usuarios (admin)
@@ -199,7 +199,7 @@ Después de ejecutar `npm run prisma:seed`:
 - [ ] Tests unitarios e integración
 - [ ] Documentación API (Swagger)
 
-## 📚 Documentación
+## Documentación
 
 - [README.md](./README.md) - Este archivo
 - [DESPLIEGUE.md](./DESPLIEGUE.md) - Instrucciones de instalación
@@ -208,7 +208,7 @@ Después de ejecutar `npm run prisma:seed`:
 - [TESTS_AUTH.md](./TESTS_AUTH.md) - Guía de testing de autenticación
 - [REGISTRO_CAMBIOS.md](./REGISTRO_CAMBIOS.md) - Historial de cambios
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 ```
 src/
@@ -257,10 +257,10 @@ successResponse(res, user, 'Usuario obtenido', 200);
 paginatedResponse(res, users, { page: 1, limit: 10, total: 100 });
 ```
 
-## 📄 Licencia
+## Licencia
 
 ISC
 
-## 👥 Autor
+## Autor
 
 Energía CO2 - Backend Team

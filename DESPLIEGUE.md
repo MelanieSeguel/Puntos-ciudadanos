@@ -1,6 +1,6 @@
 # Instrucciones de Despliegue - Semana 1
 
-## 📦 Instalación y Puesta en Marcha
+## Instalación y Puesta en Marcha
 
 ### Opción 1: Con Docker (Recomendado)
 
@@ -62,7 +62,7 @@ npm run prisma:seed
 npm run dev
 ```
 
-## 🧪 Verificación
+## Verificación
 
 ### 1. Health Check
 ```powershell
@@ -91,7 +91,7 @@ npm run prisma:studio
 ```
 Se abre en http://localhost:5555
 
-## 🗄️ Verificar Base de Datos
+## Verificar Base de Datos
 
 ### Conectar a PostgreSQL (Docker):
 ```powershell
@@ -117,13 +117,13 @@ SELECT * FROM wallets;
 SELECT * FROM benefits;
 ```
 
-## 🛑 Detener Servicios
+## Detener Servicios
 
 ```powershell
 docker-compose down
 ```
 
-## 🔄 Reiniciar Limpio
+## Reiniciar Limpio
 
 ```powershell
 # Detener y eliminar volúmenes
@@ -139,7 +139,7 @@ docker exec -it puntos_ciudadanos_app npx prisma migrate dev --name init
 docker exec -it puntos_ciudadanos_app npm run prisma:seed
 ```
 
-## ⚠️ Solución de Problemas Comunes
+## Solución de Problemas Comunes
 
 ### Puerto 3000 o 5432 ya en uso
 ```powershell
@@ -169,29 +169,29 @@ docker-compose logs postgres
 npm run prisma:generate
 ```
 
-## 📊 Estructura Creada
+## Estructura Creada
 
 ```
 puntos-ciudadanos/
 ├── prisma/
-│   ├── schema.prisma       ✅ Modelos definidos
-│   └── seed.js             ✅ Datos de prueba
+│   ├── schema.prisma       # Modelos definidos
+│   └── seed.js             # Datos de prueba
 ├── src/
 │   ├── config/
-│   │   ├── database.js     ✅ Conexión Prisma
-│   │   └── index.js        ✅ Configuración general
-│   └── server.js           ✅ Servidor Express
-├── .dockerignore           ✅
-├── .env                    ✅
-├── .env.example            ✅
-├── .gitignore              ✅
-├── docker-compose.yml      ✅
-├── Dockerfile              ✅
-├── package.json            ✅
-└── README.md               ✅
+│   │   ├── database.js     # Conexión Prisma
+│   │   └── index.js        # Configuración general
+│   └── server.js           # Servidor Express
+├── .dockerignore
+├── .env
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+├── Dockerfile
+├── package.json
+└── README.md
 ```
 
-## ✅ Checklist Semana 1
+## Checklist Semana 1
 
 - [x] Docker Compose configurado (Node + PostgreSQL)
 - [x] Volúmenes persistentes para datos
@@ -207,7 +207,7 @@ puntos-ciudadanos/
 - [x] Seed con datos de prueba
 - [x] README con documentación
 
-## 🎯 Próximos Pasos (Semana 2)
+## Próximos Pasos (Semana 2)
 
 La infraestructura está lista para comenzar a implementar:
 - Autenticación (JWT)

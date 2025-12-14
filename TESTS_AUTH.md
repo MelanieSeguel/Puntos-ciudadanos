@@ -25,28 +25,28 @@ Content-Type: application/json
 ```
 
 ### Tests Esperados
-✓ Status: 201
-✓ Response contiene `token`
-✓ Response contiene `user.wallet` con `saldoActual: 0`
-✓ Usuario tiene rol `USER`
+- Status: 201
+- Response contiene `token`
+- Response contiene `user.wallet` con `saldoActual: 0`
+- Usuario tiene rol `USER`
 
 ### Errores a Probar
-❌ Email duplicado (409):
+Email duplicado (409):
 ```json
 { "email": "test@example.com", "password": "Test123!@#", "confirmPassword": "Test123!@#" }
 ```
 
-❌ Password débil (400):
+Password débil (400):
 ```json
 { "nombre": "Test", "email": "new@test.com", "password": "123", "confirmPassword": "123" }
 ```
 
-❌ Passwords no coinciden (400):
+Passwords no coinciden (400):
 ```json
 { "nombre": "Test", "email": "new@test.com", "password": "Test123!@#", "confirmPassword": "Different123!@#" }
 ```
 
-❌ Email inválido (400):
+Email inválido (400):
 ```json
 { "nombre": "Test", "email": "invalidemail", "password": "Test123!@#", "confirmPassword": "Test123!@#" }
 ```
@@ -67,22 +67,22 @@ Content-Type: application/json
 ```
 
 ### Tests Esperados
-✓ Status: 200
-✓ Response contiene `token`
-✓ Response contiene `user` con datos completos
+- Status: 200
+- Response contiene `token`
+- Response contiene `user` con datos completos
 
 ### Errores a Probar
-❌ Credenciales incorrectas (401):
+Credenciales incorrectas (401):
 ```json
 { "email": "test@example.com", "password": "WrongPassword123!" }
 ```
 
-❌ Usuario no existe (401):
+Usuario no existe (401):
 ```json
 { "email": "noexiste@example.com", "password": "Test123!@#" }
 ```
 
-❌ Rate limit (429):
+Rate limit (429):
 Hacer 6 intentos fallidos en 15 minutos
 
 ---
@@ -96,23 +96,23 @@ Authorization: Bearer {{TOKEN}}
 ```
 
 ### Tests Esperados
-✓ Status: 200
-✓ Response contiene datos del usuario
-✓ Response contiene wallet con `version`
+- Status: 200
+- Response contiene datos del usuario
+- Response contiene wallet
 
 ### Errores a Probar
-❌ Sin token (401):
+Sin token (401):
 ```http
 GET {{BASE_URL}}/auth/me
 ```
 
-❌ Token inválido (401):
+Token inválido (401):
 ```http
 GET {{BASE_URL}}/auth/me
 Authorization: Bearer token_invalido
 ```
 
-❌ Token expirado (401):
+Token expirado (401):
 Usar un token generado hace más de 24h
 
 ---
@@ -132,16 +132,16 @@ Content-Type: application/json
 ```
 
 ### Tests Esperados
-✓ Status: 200
-✓ Response contiene datos actualizados
+- Status: 200
+- Response contiene datos actualizados
 
 ### Errores a Probar
-❌ Email ya en uso (409):
+Email ya en uso (409):
 ```json
 { "email": "admin@energiaco2.com" }
 ```
 
-❌ Sin autenticación (401):
+Sin autenticación (401):
 ```http
 PUT {{BASE_URL}}/auth/profile
 Content-Type: application/json
@@ -167,12 +167,12 @@ Content-Type: application/json
 ```
 
 ### Tests Esperados
-✓ Status: 200
-✓ Debe poder hacer login con nueva contraseña
-✓ No debe poder hacer login con contraseña anterior
+- Status: 200
+- Debe poder hacer login con nueva contraseña
+- No debe poder hacer login con contraseña anterior
 
 ### Errores a Probar
-❌ Contraseña actual incorrecta (401):
+Contraseña actual incorrecta (401):
 ```json
 {
   "currentPassword": "WrongPassword123!",
@@ -181,7 +181,7 @@ Content-Type: application/json
 }
 ```
 
-❌ Nueva contraseña igual a actual (400):
+Nueva contraseña igual a actual (400):
 ```json
 {
   "currentPassword": "Test123!@#",
@@ -190,7 +190,7 @@ Content-Type: application/json
 }
 ```
 
-❌ Contraseñas no coinciden (400):
+Contraseñas no coinciden (400):
 ```json
 {
   "currentPassword": "Test123!@#",
@@ -210,8 +210,8 @@ Authorization: Bearer {{TOKEN}}
 ```
 
 ### Tests Esperados
-✓ Status: 200
-✓ Cliente debe eliminar el token
+- Status: 200
+- Cliente debe eliminar el token
 
 ---
 
@@ -238,13 +238,13 @@ Authorization: Bearer {{TOKEN}}
 GET {{BASE_URL}}/admin/users
 Authorization: Bearer {{USER_TOKEN}}
 ```
-❌ Debe retornar 403
+Debe retornar 403
 
 ```http
 GET {{BASE_URL}}/admin/users
 Authorization: Bearer {{ADMIN_TOKEN}}
 ```
-✓ Debe retornar 200
+Debe retornar 200
 
 ---
 
