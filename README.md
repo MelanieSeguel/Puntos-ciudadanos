@@ -87,14 +87,22 @@ Benefit (1:N) PointTransactions
 
 ## 📡 API Endpoints
 
-### Health Check
+### Autenticación
 ```
-GET /health
+POST   /api/v1/auth/register        - Registrar usuario
+POST   /api/v1/auth/login           - Iniciar sesión
+GET    /api/v1/auth/me              - Obtener usuario autenticado (requiere auth)
+PUT    /api/v1/auth/profile         - Actualizar perfil (requiere auth)
+PUT    /api/v1/auth/change-password - Cambiar contraseña (requiere auth)
+POST   /api/v1/auth/logout          - Cerrar sesión (requiere auth)
 ```
 
-### API Info
+Ver documentación completa en [AUTENTICACION.md](./AUTENTICACION.md)
+
+### Health Check
 ```
-GET /api/v1
+GET /health                         - Estado del servidor
+GET /api/v1                         - Info de la API
 ```
 
 ## 🔒 Seguridad
@@ -180,17 +188,25 @@ Después de ejecutar `npm run prisma:seed`:
 - Email: `maria@example.com` / Password: `user123`
 - Email: `juan@example.com` / Password: `user123`
 
-## 📝 Próximos Pasos (Semana 2+)
+## 📝 Próximos Pasos (Semana 3+)
 
-- [ ] Implementar módulo de autenticación (registro, login, JWT)
-- [ ] CRUD de usuarios
-- [ ] Sistema de gestión de puntos
-- [ ] CRUD de beneficios
-- [ ] Sistema de noticias
-- [ ] Middleware de autorización (RBAC)
-- [ ] Validaciones con express-validator
+- [x] Implementar módulo de autenticación (registro, login, JWT)
+- [ ] CRUD de usuarios (admin)
+- [ ] Sistema de gestión de puntos y transacciones
+- [ ] CRUD de beneficios (admin)
+- [ ] Sistema de canje de beneficios
+- [ ] Sistema de noticias (admin)
 - [ ] Tests unitarios e integración
 - [ ] Documentación API (Swagger)
+
+## 📚 Documentación
+
+- [README.md](./README.md) - Este archivo
+- [DESPLIEGUE.md](./DESPLIEGUE.md) - Instrucciones de instalación
+- [MEJORAS_SEGURIDAD.md](./MEJORAS_SEGURIDAD.md) - Mejoras de seguridad implementadas
+- [AUTENTICACION.md](./AUTENTICACION.md) - Documentación de autenticación
+- [TESTS_AUTH.md](./TESTS_AUTH.md) - Guía de testing de autenticación
+- [REGISTRO_CAMBIOS.md](./REGISTRO_CAMBIOS.md) - Historial de cambios
 
 ## 🏗️ Arquitectura
 

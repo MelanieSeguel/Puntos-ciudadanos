@@ -1,4 +1,144 @@
-# Resumen de Mejoras - Hotfix Semana 1
+# Registro de Cambios
+
+## [Semana 2] - Autenticación y Seguridad - 2025-12-14
+
+### Implementado
+
+#### Utilidades y Herramientas
+- **JWT Utils** (`src/utils/jwt.js`)
+  - Generación y verificación de tokens
+  - Extracción de token desde headers
+  - Soporte para refresh tokens
+  - Manejo de errores de token expirado/inválido
+
+- **Validaciones Zod** (`src/validators/schemas.js`)
+  - Esquemas de validación para auth
+  - Middleware genérico de validación
+  - Validación de password fuerte (8+ chars, mayúsculas, minúsculas, números, especiales)
+  - Validación de email normalizado
+  - Esquemas adicionales para beneficios, noticias, paginación
+
+#### Controladores
+- **Auth Controller** (`src/controllers/auth.controller.js`)
+  - `POST /api/v1/auth/register` - Registro con wallet automática
+  - `POST /api/v1/auth/login` - Login con verificación de estado
+  - `GET /api/v1/auth/me` - Obtener usuario autenticado
+  - `PUT /api/v1/auth/profile` - Actualizar perfil
+  - `PUT /api/v1/auth/change-password` - Cambiar contraseña
+  - `POST /api/v1/auth/logout` - Cerrar sesión (stateless)
+
+#### Middlewares
+- **Autenticación** (`src/middlewares/auth.js`)
+  - `authenticate` - Verificación obligatoria de JWT
+  - `optionalAuth` - Autenticación opcional
+
+- **Autorización** (`src/middlewares/authorize.js`)
+  - `authorize(...roles)` - Verificación por roles
+  - `isAdmin` - Shortcut para admin
+  - `isOwnerOrAdmin` - Verificar propietario o admin
+
+#### Rutas
+- **Auth Routes** (`src/routes/auth.routes.js`)
+  - Rate limiting específico para auth
+  - Validaciones Zod integradas
+  - Documentación inline
+
+#### Seguridad
+- Password hashing con bcrypt (12 rounds)
+- Política de password fuerte
+- Rate limiting para login (5 intentos / 15 min)
+- Rate limiting para registro (3 intentos / 1 hora)
+- Verificación de estado de usuario en cada request
+- JWT con expiración configurable
+- Contraseñas nunca retornadas en responses
+
+#### Documentación
+- `AUTENTICACION.md` - Documentación completa de endpoints y seguridad
+- `TESTS_AUTH.md` - Guía de testing manual
+- Ejemplos de uso con cURL y PowerShell
+
+### Mejoras
+
+#### Dependencias
+- Agregada `zod@^3.22.4` para validaciones type-safe
+
+#### Server
+- Rutas de autenticación integradas en `server.js`
+- Error handling mejorado para errores de autenticación
+
+### Tests Realizados
+
+#### Funcionalidad ✓
+- [x] Registro exitoso crea usuario y wallet
+- [x] Login exitoso retorna token válido
+- [x] Token permite acceso a rutas protegidas
+- [x] GET /me retorna datos del usuario
+- [x] Validaciones funcionan correctamente
+
+#### Validaciones ✓
+- [x] Email inválido rechazado
+- [x] Password débil rechazado
+- [x] Errors retornan detalles específicos
+
+#### Seguridad ✓
+- [x] Contraseñas hasheadas en BD
+- [x] Contraseñas no retornadas en responses
+- [x] JWT firmado correctamente
+- [x] Rate limiting funciona
+
+### Archivos Creados/Modificados
+
+#### Nuevos Archivos
+```
+src/
+├── controllers/
+│   └── auth.controller.js       [NUEVO]
+├── routes/
+│   └── auth.routes.js           [NUEVO]
+├── utils/
+│   └── jwt.js                   [NUEVO]
+└── validators/
+    └── schemas.js               [NUEVO]
+
+docs/
+├── AUTENTICACION.md             [NUEVO]
+└── TESTS_AUTH.md                [NUEVO]
+```
+
+#### Archivos Modificados
+```
+src/
+├── middlewares/
+│   ├── auth.js                  [ACTUALIZADO - Implementado]
+│   └── authorize.js             [ACTUALIZADO - Implementado]
+├── server.js                    [ACTUALIZADO - Rutas integradas]
+└── package.json                 [ACTUALIZADO - Zod agregado]
+```
+
+### Endpoints Disponibles
+
+#### Públicos
+- `POST /api/v1/auth/register` - Registrar usuario
+- `POST /api/v1/auth/login` - Iniciar sesión
+
+#### Privados (Requieren Token)
+- `GET /api/v1/auth/me` - Datos del usuario
+- `PUT /api/v1/auth/profile` - Actualizar perfil
+- `PUT /api/v1/auth/change-password` - Cambiar contraseña
+- `POST /api/v1/auth/logout` - Cerrar sesión
+
+### Próximos Pasos (Semana 3)
+
+Con autenticación completa, ahora se puede implementar:
+1. CRUD de usuarios (rutas protegidas con roles)
+2. Sistema de gestión de puntos
+3. CRUD de beneficios (admin)
+4. Sistema de noticias (admin)
+5. Canje de beneficios con control de concurrencia
+
+---
+
+## [Semana 1] - Infraestructura y Base de Datos - 2025-12-14
 
 ## Cambios Aplicados al Proyecto
 

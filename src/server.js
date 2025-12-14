@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import config from './config/index.js';
 import prisma from './config/database.js';
 import { AppError } from './utils/errors.js';
+import authRoutes from './routes/auth.routes.js';
 
 const app = express();
 
@@ -90,7 +91,7 @@ app.get('/health', async (req, res) => {
 });
 
 // ============================================
-// API ROUTES (TO BE IMPLEMENTED)
+// API ROUTES
 // ============================================
 
 app.get(`/api/${config.apiVersion}`, (req, res) => {
@@ -102,14 +103,15 @@ app.get(`/api/${config.apiVersion}`, (req, res) => {
   });
 });
 
-// TODO: Importar rutas cuando estén disponibles
-// import authRoutes from './routes/auth.routes.js';
+// Auth routes
+app.use(`/api/${config.apiVersion}/auth`, authRoutes);
+
+// TODO: Implementar rutas adicionales
 // import userRoutes from './routes/user.routes.js';
 // import walletRoutes from './routes/wallet.routes.js';
 // import benefitRoutes from './routes/benefit.routes.js';
 // import newsRoutes from './routes/news.routes.js';
 
-// app.use(`/api/${config.apiVersion}/auth`, authRoutes);
 // app.use(`/api/${config.apiVersion}/users`, userRoutes);
 // app.use(`/api/${config.apiVersion}/wallets`, walletRoutes);
 // app.use(`/api/${config.apiVersion}/benefits`, benefitRoutes);
