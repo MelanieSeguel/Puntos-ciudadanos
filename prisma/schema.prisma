@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum TransactionType {
+  EARNED   // Ganancia de puntos
+  SPENT    // Gasto de puntos
+  REFUND   // Devolución de puntos
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+/// Usuarios del sistema (ciudadanos y administradores)
+model User {
+  id            String      @id @default(uuid())
+  nombre        String      @db.VarChar(255)
+  email         String      @unique @db.VarChar(255)
+  passwordHash  String      @map("password_hash") @db.VarChar(255)
+  rol           UserRole    @default(USER)
+  estado        UserStatus  @default(ACTIVE)
+  fechaRegistro DateTime    @default(now()) @map("fecha_registro") @db.Timestamptz(3)
+  
+  // Timestamps
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  wallet        Wallet?     // Relación 1:1 con Wallet
+  news          News[]      // Noticias publicadas (si es admin)
+  
+  @@index([email])
+  @@index([rol])
+  @@index([estado])
+  @@map("users")
+}
+
+/// Billetera de puntos del usuario (relación 1:1 con User)
+model Wallet {
+  id           String               @id @default(uuid())
+  userId       String               @unique @map("user_id")
+  saldoActual  Int                  @default(0) @map("saldo_actual")
+  version      Int                  @default(0) // Optimistic Concurrency Control
+  
+  // Timestamps
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions PointTransaction[]   // Historial de transacciones
+  
+  @@index([userId])
+  @@map("wallets")
+}
+
+/// Historial de transacciones de puntos (inmutable)
+model PointTransaction {
+  id           String          @id @default(uuid())
+  walletId     String          @map("wallet_id")
+  tipo         TransactionType
+  monto        Int             // Cantidad de puntos (siempre positivo)
+  descripcion  String          @db.Text
+  benefitId    String?         @map("benefit_id") // Referencia al beneficio canjeado (opcional)
+  fecha        DateTime        @default(now()) @db.Timestamptz(3)
+  
+  // Metadata adicional
+  metadata     Json?           // Campo flexible para datos adicionales
+  
+  // Timestamps
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  wallet       Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  benefit      Benefit?        @relation(fields: [benefitId], references: [id], onDelete: SetNull)
+  
+  @@index([walletId])
+  @@index([tipo])
+  @@index([fecha])
+  @@index([benefitId])
+  @@map("point_transactions")
+}
+
+/// Catálogo de beneficios canjeables
+model Benefit {
+  id               String             @id @default(uuid())
+  titulo           String             @db.VarChar(255)
+  descripcion      String?            @db.Text
+  costoPuntos      Int                @map("costo_puntos")
+  stock            Int                @default(0)
+  imagenUrl        String?            @map("imagen_url") @db.VarChar(500)
+  activo           Boolean            @default(true)
+  categoria        String?            @db.VarChar(100) // Ej: "Descuentos", "Productos", "Servicios"
+  version          Int                @default(0) // Optimistic Concurrency Control para stock
+  
+  // Timestamps
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  transactions     PointTransaction[] // Transacciones que usaron este beneficio
+  
+  @@index([activo])
+  @@index([costoPuntos])
+  @@map("benefits")
+}
+
+/// Noticias y comunicados publicados por administradores
+model News {
+  id           String    @id @default(uuid())
+  titulo       String    @db.VarChar(255)
+  cuerpo       String    @db.Text
+  autorId      String    @map("autor_id")
+  imagenUrl    String?   @map("imagen_url") @db.VarChar(500)
+  publicada    Boolean   @default(false)
+  fecha        DateTime  @default(now()) @db.Timestamptz(3)
+  
+  // Timestamps
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  autor        User      @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  
+  @@index([autorId])
+  @@index([publicada])
+  @@index([fecha])
+  @@map("news")
+}

@@ -1,0 +1,11 @@
+# Instrucciones de Docker para desarrollo local
+.git
+.gitignore
+README.md
+.env
+.env.example
+node_modules
+npm-debug.log
+docker-compose.yml
+Dockerfile
+.dockerignore
