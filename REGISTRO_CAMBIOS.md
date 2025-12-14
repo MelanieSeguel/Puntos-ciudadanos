@@ -1,5 +1,32 @@
 # Registro de Cambios
 
+## [Hotfix] - Auditoría Post-Semana 2 - 2025-12-14
+
+### Correcciones Implementadas
+
+#### Código Muerto Eliminado
+- **Eliminado**: `src/middlewares/validateRequest.js`
+- **Razón**: Código obsoleto usando express-validator (reemplazado por Zod)
+- **Impacto**: Código más limpio, sin confusión
+
+#### Campo Técnico Removido
+- **Modificado**: `src/controllers/auth.controller.js` - endpoint `getMe`
+- **Cambio**: Campo `version` ya no se expone en la wallet
+- **Razón**: Campo de uso interno (control de concurrencia), no necesario en frontend
+- **Impacto**: Respuestas más limpias, sin detalles de implementación
+
+#### Documentación Actualizada
+- **Actualizado**: `AUTENTICACION.md` - Ejemplo de respuesta de `/me` sin `version`
+- **Creado**: `AUDITORIA.md` - Documento de auditoría y mejoras
+
+### Calidad del Código
+- Sin dependencias muertas
+- Sin campos técnicos expuestos
+- Respuestas limpias para el frontend
+- Nivel de código: Senior/Producción
+
+---
+
 ## [Semana 2] - Autenticación y Seguridad - 2025-12-14
 
 ### Implementado
@@ -68,23 +95,23 @@
 
 ### Tests Realizados
 
-#### Funcionalidad ✓
-- [x] Registro exitoso crea usuario y wallet
-- [x] Login exitoso retorna token válido
-- [x] Token permite acceso a rutas protegidas
-- [x] GET /me retorna datos del usuario
-- [x] Validaciones funcionan correctamente
+#### Funcionalidad
+- Registro exitoso crea usuario y wallet
+- Login exitoso retorna token válido
+- Token permite acceso a rutas protegidas
+- GET /me retorna datos del usuario
+- Validaciones funcionan correctamente
 
-#### Validaciones ✓
-- [x] Email inválido rechazado
-- [x] Password débil rechazado
-- [x] Errors retornan detalles específicos
+#### Validaciones
+- Email inválido rechazado
+- Password débil rechazado
+- Errors retornan detalles específicos
 
-#### Seguridad ✓
-- [x] Contraseñas hasheadas en BD
-- [x] Contraseñas no retornadas en responses
-- [x] JWT firmado correctamente
-- [x] Rate limiting funciona
+#### Seguridad
+- Contraseñas hasheadas en BD
+- Contraseñas no retornadas en responses
+- JWT firmado correctamente
+- Rate limiting funciona
 
 ### Archivos Creados/Modificados
 
@@ -265,23 +292,23 @@ ALTER TABLE "benefits" ADD COLUMN "version" INTEGER NOT NULL DEFAULT 0;
 - ✅ Middlewares modulares
 - ✅ Fácil agregar nuevas features
 
-## Estado del Proyecto
+### Estado del Proyecto
 
-### Completado ✅
-- [x] Control de concurrencia optimista
-- [x] Límite de body a 1MB
-- [x] CORS multi-origen
-- [x] Estructura de carpetas escalable
-- [x] 7 clases de error personalizadas
-- [x] Async handler utility
-- [x] Respuestas estandarizadas
-- [x] Middleware de validación
-- [x] Servicios con OCC
-- [x] Error handler mejorado
-- [x] Documentación completa
-- [x] Ejemplos de uso
+### Completado
+- Control de concurrencia optimista
+- Límite de body a 1MB
+- CORS multi-origen
+- Estructura de carpetas escalable
+- 7 clases de error personalizadas
+- Async handler utility
+- Respuestas estandarizadas
+- Middleware de validación
+- Servicios con OCC
+- Error handler mejorado
+- Documentación completa
+- Ejemplos de uso
 
-### Preparado para Semana 2 🚀
+### Preparado para Semana 2
 - [ ] Implementar autenticación JWT (middleware listo)
 - [ ] Implementar autorización RBAC (middleware listo)
 - [ ] Crear controladores usando utilities

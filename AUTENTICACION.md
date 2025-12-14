@@ -152,8 +152,7 @@ Obtener datos del usuario autenticado
     "fechaRegistro": "2025-12-14T...",
     "wallet": {
       "id": "uuid",
-      "saldoActual": 150,
-      "version": 2
+      "saldoActual": 150
     }
   }
 }
