@@ -7,12 +7,18 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ScrollView,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { 
+  validateEmail, 
+  validatePassword, 
+  validatePasswordMatch, 
+  validateName 
+} from '../../utils/validation';
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
@@ -20,18 +26,36 @@ export default function RegisterScreen() {
     apellido: '',
     email: '',
     password: '',
+    confirmPassword: '',
     telefono: '',
     direccion: '',
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const { register } = useAuth();
   const router = useRouter();
 
+  const validateForm = () => {
+    const newErrors = {};
+    
+    const nombreError = validateName(formData.nombre);
+    if (nombreError) newErrors.nombre = nombreError;
+    
+    const emailError = validateEmail(formData.email);
+    if (emailError) newErrors.email = emailError;
+    
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) newErrors.password = passwordError;
+    
+    const matchError = validatePasswordMatch(formData.password, formData.confirmPassword);
+    if (matchError) newErrors.confirmPassword = matchError;
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleRegister = async () => {
-    if (!formData.nombre || !formData.email || !formData.password) {
-      Alert.alert('Error', 'Por favor completa los campos requeridos');
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     const result = await register(formData);
@@ -40,7 +64,7 @@ export default function RegisterScreen() {
     if (result.success) {
       router.replace('/(tabs)/home');
     } else {
-      Alert.alert('Error', result.error);
+      setErrors({ general: result.error });
     }
   };
 
@@ -61,13 +85,26 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Nombre *"
-              placeholderTextColor="#a0aec0"
-              value={formData.nombre}
-              onChangeText={(text) => setFormData({ ...formData, nombre: text })}
-            />
+            {errors.general ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={20} color="#fc8181" style={{ marginRight: 8 }} />
+                <Text style={styles.errorText}>{errors.general}</Text>
+              </View>
+            ) : null}
+
+            <View>
+              <TextInput
+                style={[styles.input, errors.nombre && styles.inputError]}
+                placeholder="Nombre *"
+                placeholderTextColor="#a0aec0"
+                value={formData.nombre}
+                onChangeText={(text) => {
+                  setFormData({ ...formData, nombre: text });
+                  setErrors({ ...errors, nombre: null });
+                }}
+              />
+              {errors.nombre && <Text style={styles.errorTextSmall}>{errors.nombre}</Text>}
+            </View>
 
             <TextInput
               style={styles.input}
@@ -77,25 +114,52 @@ export default function RegisterScreen() {
               onChangeText={(text) => setFormData({ ...formData, apellido: text })}
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email *"
-              placeholderTextColor="#a0aec0"
-              value={formData.email}
-              onChangeText={(text) => setFormData({ ...formData, email: text })}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
+            <View>
+              <TextInput
+                style={[styles.input, errors.email && styles.inputError]}
+                placeholder="Email *"
+                placeholderTextColor="#a0aec0"
+                value={formData.email}
+                onChangeText={(text) => {
+                  setFormData({ ...formData, email: text });
+                  setErrors({ ...errors, email: null });
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+              {errors.email && <Text style={styles.errorTextSmall}>{errors.email}</Text>}
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Contraseña *"
-              placeholderTextColor="#a0aec0"
-              value={formData.password}
-              onChangeText={(text) => setFormData({ ...formData, password: text })}
-              secureTextEntry
-            />
+            <View>
+              <TextInput
+                style={[styles.input, errors.password && styles.inputError]}
+                placeholder="Contraseña *"
+                placeholderTextColor="#a0aec0"
+                value={formData.password}
+                onChangeText={(text) => {
+                  setFormData({ ...formData, password: text });
+                  setErrors({ ...errors, password: null });
+                }}
+                secureTextEntry
+              />
+              {errors.password && <Text style={styles.errorTextSmall}>{errors.password}</Text>}
+            </View>
+
+            <View>
+              <TextInput
+                style={[styles.input, errors.confirmPassword && styles.inputError]}
+                placeholder="Confirmar Contraseña *"
+                placeholderTextColor="#a0aec0"
+                value={formData.confirmPassword}
+                onChangeText={(text) => {
+                  setFormData({ ...formData, confirmPassword: text });
+                  setErrors({ ...errors, confirmPassword: null });
+                }}
+                secureTextEntry
+              />
+              {errors.confirmPassword && <Text style={styles.errorTextSmall}>{errors.confirmPassword}</Text>}
+            </View>
 
             <TextInput
               style={styles.input}
@@ -172,12 +236,38 @@ const styles = StyleSheet.create({
   form: {
     gap: 12,
   },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(252, 129, 129, 0.2)',
+    borderLeftWidth: 4,
+    borderLeftColor: '#fc8181',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  errorText: {
+    flex: 1,
+    color: '#fc8181',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  errorTextSmall: {
+    color: '#fc8181',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
   input: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
     color: '#2d3748',
+  },
+  inputError: {
+    borderWidth: 2,
+    borderColor: '#fc8181',
   },
   button: {
     backgroundColor: '#ed8936',

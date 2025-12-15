@@ -1,7 +1,26 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-const API_URL = 'http://localhost:3000/api/v1';
+// Configuración de URL base con soporte multiplataforma
+const getApiUrl = () => {
+  // Prioridad 1: Variable de entorno configurada
+  if (Constants.expoConfig?.extra?.apiUrl) {
+    return Constants.expoConfig.extra.apiUrl;
+  }
+  
+  // Prioridad 2: Variable de entorno EXPO_PUBLIC
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  
+  // Fallback: localhost (solo funciona en iOS simulator y web)
+  console.warn('Usando API_URL por defecto (localhost). Configura EXPO_PUBLIC_API_URL en .env');
+  return 'http://localhost:3000/api/v1';
+};
+
+const API_URL = getApiUrl();
+console.log('📡 API URL configurada:', API_URL);
 
 // Create axios instance
 const api = axios.create({

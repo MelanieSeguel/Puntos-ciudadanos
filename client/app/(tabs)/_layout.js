@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabsLayout() {
   return (
@@ -25,34 +26,32 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <TabIcon name="🏠" color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size || 24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="benefits"
         options={{
           title: 'Beneficios',
-          tabBarIcon: ({ color }) => <TabIcon name="🎁" color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="gift" size={size || 24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="scan"
         options={{
           title: 'Escanear',
-          tabBarIcon: ({ color }) => <TabIcon name="📷" color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="qr-code" size={size || 24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color }) => <TabIcon name="👤" color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size || 24} color={color} />,
         }}
       />
     </Tabs>
   );
 }
 
-function TabIcon({ name, color }) {
-  return <span style={{ fontSize: 24, opacity: color === '#2c5282' ? 1 : 0.5 }}>{name}</span>;
-}
+

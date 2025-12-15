@@ -2,17 +2,17 @@
 
 Plataforma de fidelización cívica y ecológica con backend Node.js y frontend React Native multiplataforma.
 
-## 📱 Frontend (React Native + Expo)
+## Frontend (React Native + Expo)
 
 Aplicación multiplataforma para iOS, Android y Web.
 
 ### Características
-- ✅ Autenticación (Login/Registro)
-- 💳 Wallet digital con saldo en tiempo real
-- 🎁 Catálogo de beneficios canjeables
-- 📊 Historial de transacciones
-- 🎨 UI moderna y responsive
-- 📷 Escaneo QR (próximamente)
+- Autenticación (Login/Registro)
+- Wallet digital con saldo en tiempo real
+- Catálogo de beneficios canjeables
+- Historial de transacciones
+- UI moderna y responsive
+- Escaneo QR (próximamente)
 
 ### Iniciar Frontend
 
@@ -25,7 +25,7 @@ npm start        # Para móvil con Expo Go
 
 Ver documentación completa en [client/README.md](./client/README.md)
 
-## 🔧 Backend (Node.js + Express)
+## Backend (Node.js + Express)
 
 API RESTful con PostgreSQL y autenticación JWT.
 

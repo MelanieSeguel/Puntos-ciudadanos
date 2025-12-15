@@ -2,29 +2,52 @@
 
 Aplicación móvil y web construida con React Native + Expo.
 
-## 🚀 Características
+## Características
 
-- ✅ **Multiplataforma**: Un solo código para iOS, Android y Web
-- 🔐 **Autenticación**: Login y registro integrados con API backend
-- 💳 **Wallet Digital**: Visualización de saldo en tiempo real
-- 🎁 **Catálogo de Beneficios**: Canjes con confirmación
-- 📊 **Historial**: Transacciones y estadísticas
-- 📱 **Responsive**: Diseño adaptativo mobile/desktop
-- 🎨 **UI Moderna**: Gradientes, sombras y animaciones
+- **Multiplataforma**: Un solo código para iOS, Android y Web
+- **Autenticación**: Login y registro con validaciones en tiempo real
+- **Wallet Digital**: Visualización de saldo en tiempo real
+- **Catálogo de Beneficios**: Canjes con confirmación
+- **Historial**: Transacciones y estadísticas
+- **Responsive**: Diseño adaptativo mobile/desktop
+- **UI Moderna**: Gradientes, feedback visual de errores
+- **Seguridad**: Variables de entorno para API, validaciones frontend
 
-## 📋 Requisitos Previos
+## Requisitos Previos
 
 - Node.js 18+
-- Backend corriendo en `http://localhost:3000`
+- Backend corriendo (ver instrucciones abajo según plataforma)
 
-## 🛠️ Instalación
+## Instalación
 
 ```bash
 cd client
 npm install
 ```
 
-## 🏃 Ejecutar la Aplicación
+## Configuración
+
+### Variables de Entorno
+
+Crea un archivo `.env` en la carpeta `client/`:
+
+```env
+# Para iOS Simulator y Web
+EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1
+
+# Para Android Emulator
+# EXPO_PUBLIC_API_URL=http://10.0.2.2:3000/api/v1
+
+# Para dispositivo físico (reemplaza con tu IP local)
+# EXPO_PUBLIC_API_URL=http://192.168.1.82:3000/api/v1
+```
+
+**Cómo saber tu IP local:**
+- Windows: `ipconfig` → busca "IPv4 Address"
+- Mac/Linux: `ifconfig` → busca "inet"
+- O usa la IP que muestra Expo Metro (la misma del QR)
+
+## Ejecutar la Aplicación
 
 ### Web
 ```bash
@@ -49,6 +72,7 @@ npm run ios
 ```bash
 npm run android
 ```
+**Importante:** Asegúrate de usar `EXPO_PUBLIC_API_URL=http://10.0.2.2:3000/api/v1` en el `.env`
 
 ## 📱 Pantallas Implementadas
 

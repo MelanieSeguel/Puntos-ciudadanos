@@ -17,12 +17,16 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login } = useAuth();
   const router = useRouter();
 
   const handleLogin = async () => {
+    // Limpiar error anterior
+    setError('');
+    
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+      setError('Por favor completa todos los campos');
       return;
     }
 
@@ -33,7 +37,7 @@ export default function LoginScreen() {
     if (result.success) {
       router.replace('/(tabs)/home');
     } else {
-      Alert.alert('Error', result.error);
+      setError(result.error || 'Error al iniciar sesión');
     }
   };
 
@@ -53,12 +57,19 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={20} color="#e53e3e" style={{ marginRight: 8 }} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
           <TextInput
             style={styles.input}
             placeholder="Email"
             placeholderTextColor="#a0aec0"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => { setEmail(text); setError(''); }}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -69,7 +80,7 @@ export default function LoginScreen() {
             placeholder="Contraseña"
             placeholderTextColor="#a0aec0"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => { setPassword(text); setError(''); }}
             secureTextEntry
             autoComplete="password"
           />
@@ -127,6 +138,18 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 16,
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(252, 129, 129, 0.2)',
+    borderLeftWidth: 4,
+    borderLeftColor: '#fc8181',
+    borderRadius: 8,
+    padding: 12,
+  },
+  errorText: {
+    color: '#fc8181',
+    fontSize: 14,
+    fontWeight: '500',
   },
   input: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',

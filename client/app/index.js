@@ -1,15 +1,21 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Index() {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#2c5282" />
-      </View>
+      <LinearGradient
+        colors={['#2c5282', '#3182ce']}
+        style={styles.container}
+      >
+        <View style={styles.content}>
+          <ActivityIndicator size="large" color="#ffffff" />
+        </View>
+      </LinearGradient>
     );
   }
 
@@ -19,3 +25,14 @@ export default function Index() {
 
   return <Redirect href="/(auth)/login" />;
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

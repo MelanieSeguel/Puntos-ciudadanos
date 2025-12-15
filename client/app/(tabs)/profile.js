@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -56,25 +57,25 @@ export default function ProfileScreen() {
         {/* Menu Options */}
         <View style={styles.menuSection}>
           <MenuOption
-            icon="📊"
+            icon="stats-chart"
             title="Historial"
             subtitle="Ver tus transacciones"
             onPress={() => router.push('/(tabs)/history')}
           />
           <MenuOption
-            icon="🎁"
+            icon="gift"
             title="Mis Canjes"
             subtitle="Beneficios canjeados"
             onPress={() => {}}
           />
           <MenuOption
-            icon="⚙️"
+            icon="settings"
             title="Configuración"
             subtitle="Ajustes de la cuenta"
             onPress={() => {}}
           />
           <MenuOption
-            icon="ℹ️"
+            icon="information-circle"
             title="Acerca de"
             subtitle="Información de la app"
             onPress={() => {}}
@@ -95,12 +96,12 @@ export default function ProfileScreen() {
 function MenuOption({ icon, title, subtitle, onPress }) {
   return (
     <TouchableOpacity style={styles.menuOption} onPress={onPress}>
-      <Text style={styles.menuIcon}>{icon}</Text>
+      <Ionicons name={icon} size={24} color="#2c5282" style={styles.menuIcon} />
       <View style={styles.menuText}>
         <Text style={styles.menuTitle}>{title}</Text>
         <Text style={styles.menuSubtitle}>{subtitle}</Text>
       </View>
-      <Text style={styles.menuArrow}>›</Text>
+      <Ionicons name="chevron-forward" size={20} color="#a0aec0" />
     </TouchableOpacity>
   );
 }
@@ -179,7 +180,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e2e8f0',
   },
   menuIcon: {
-    fontSize: 24,
     marginRight: 16,
   },
   menuText: {
@@ -194,10 +194,6 @@ const styles = StyleSheet.create({
   menuSubtitle: {
     fontSize: 14,
     color: '#718096',
-  },
-  menuArrow: {
-    fontSize: 24,
-    color: '#cbd5e0',
   },
   logoutButton: {
     backgroundColor: '#fc8181',
