@@ -21,6 +21,17 @@ router.post(
 );
 
 /**
+ * POST /api/v1/points/scan
+ * Escanear código QR para ganar puntos
+ * Usuario autenticado
+ */
+router.post(
+  '/scan',
+  authenticate,
+  pointsController.scanQR
+);
+
+/**
  * POST /api/v1/points/redeem
  * Canjear beneficio por puntos
  * Usuario autenticado

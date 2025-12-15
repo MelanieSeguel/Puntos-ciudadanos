@@ -90,6 +90,11 @@ export const walletAPI = {
 
 // Points API
 export const pointsAPI = {
+  addPoints: async (qrData) => {
+    const response = await api.post('/points/scan', qrData);
+    return response.data;
+  },
+  
   redeemBenefit: async (benefitId) => {
     const response = await api.post('/points/redeem', { benefitId });
     return response.data;
