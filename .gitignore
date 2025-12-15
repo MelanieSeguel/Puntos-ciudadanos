@@ -34,3 +34,9 @@ build/
 
 # Prisma
 prisma/migrations/
+
+# Expo & React Native
+client/.expo/
+client/dist/
+client/web-build/
+client/.expo-shared/

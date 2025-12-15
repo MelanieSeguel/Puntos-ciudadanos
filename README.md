@@ -1,8 +1,35 @@
-# Puntos Ciudadanos - Backend
+# Puntos Ciudadanos
 
-Plataforma de fidelización cívica y ecológica desarrollada con Node.js, Express y PostgreSQL.
+Plataforma de fidelización cívica y ecológica con backend Node.js y frontend React Native multiplataforma.
 
-## Tecnologías
+## 📱 Frontend (React Native + Expo)
+
+Aplicación multiplataforma para iOS, Android y Web.
+
+### Características
+- ✅ Autenticación (Login/Registro)
+- 💳 Wallet digital con saldo en tiempo real
+- 🎁 Catálogo de beneficios canjeables
+- 📊 Historial de transacciones
+- 🎨 UI moderna y responsive
+- 📷 Escaneo QR (próximamente)
+
+### Iniciar Frontend
+
+```bash
+cd client
+npm install
+npm run web      # Para navegador web
+npm start        # Para móvil con Expo Go
+```
+
+Ver documentación completa en [client/README.md](./client/README.md)
+
+## 🔧 Backend (Node.js + Express)
+
+API RESTful con PostgreSQL y autenticación JWT.
+
+### Tecnologías
 
 - **Node.js** (v20+)
 - **Express.js** - Framework web
@@ -188,17 +215,33 @@ Después de ejecutar `npm run prisma:seed`:
 - Email: `maria@example.com` / Password: `user123`
 - Email: `juan@example.com` / Password: `user123`
 
-## Próximos Pasos (Semana 3+)
+## ✅ Estado del Proyecto
 
+### Completado (Semanas 1-3)
 - [x] Implementar módulo de autenticación (registro, login, JWT)
-- [ ] CRUD de usuarios (admin)
-- [ ] Sistema de gestión de puntos y transacciones
-- [ ] CRUD de beneficios (admin)
-- [ ] Sistema de canje de beneficios
-- [ ] Sistema de noticias (admin)
-- [ ] Tests unitarios e integración
-- [ ] Documentación API (Swagger)
+- [x] Sistema de gestión de puntos y transacciones (ACID)
+- [x] Sistema de canje de beneficios con OCC
+- [x] Frontend multiplataforma (React Native + Expo)
+- [x] Wallet digital con saldo en tiempo real
+- [x] Catálogo de beneficios con canje
 
+### Próximos Pasos (Semana 4+)
+## Documentación
+
+### General
+- [README.md](./README.md) - Este archivo
+- [DESPLIEGUE.md](./DESPLIEGUE.md) - Instrucciones de instalación
+- [REGISTRO_CAMBIOS.md](./REGISTRO_CAMBIOS.md) - Historial de cambios
+
+### Backend
+- [AUTENTICACION.md](./AUTENTICACION.md) - Documentación de autenticación
+- [PUNTOS_WALLET.md](./PUNTOS_WALLET.md) - Sistema de puntos y wallet
+- [MEJORAS_SEGURIDAD.md](./MEJORAS_SEGURIDAD.md) - Mejoras de seguridad
+- [TESTS_AUTH.md](./TESTS_AUTH.md) - Testing de autenticación
+- [TESTS_PUNTOS.md](./TESTS_PUNTOS.md) - Testing del sistema de puntos
+
+### Frontend
+- [client/README.md](./client/README.md) - Documentación completa del frontend
 ## Documentación
 
 - [README.md](./README.md) - Este archivo

@@ -15,6 +15,9 @@ const app = express();
 // SECURITY MIDDLEWARE
 // ============================================
 
+// CORS: Control de acceso entre orígenes (ANTES de Helmet)
+app.use(cors(config.cors));
+
 // Helmet: Protección de headers HTTP
 app.use(helmet({
   contentSecurityPolicy: {
@@ -31,9 +34,6 @@ app.use(helmet({
     preload: true,
   },
 }));
-
-// CORS: Control de acceso entre orígenes
-app.use(cors(config.cors));
 
 // Rate Limiting: Prevención de ataques por fuerza bruta
 const limiter = rateLimit({
@@ -106,14 +106,20 @@ app.get(`/api/${config.apiVersion}`, (req, res) => {
 // Auth routes
 app.use(`/api/${config.apiVersion}/auth`, authRoutes);
 
+// Points routes
+import pointsRoutes from './routes/points.routes.js';
+app.use(`/api/${config.apiVersion}/points`, pointsRoutes);
+
+// Wallet routes
+import walletRoutes from './routes/wallet.routes.js';
+app.use(`/api/${config.apiVersion}/wallet`, walletRoutes);
+
 // TODO: Implementar rutas adicionales
 // import userRoutes from './routes/user.routes.js';
-// import walletRoutes from './routes/wallet.routes.js';
 // import benefitRoutes from './routes/benefit.routes.js';
 // import newsRoutes from './routes/news.routes.js';
 
 // app.use(`/api/${config.apiVersion}/users`, userRoutes);
-// app.use(`/api/${config.apiVersion}/wallets`, walletRoutes);
 // app.use(`/api/${config.apiVersion}/benefits`, benefitRoutes);
 // app.use(`/api/${config.apiVersion}/news`, newsRoutes);
 

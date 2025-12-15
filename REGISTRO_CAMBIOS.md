@@ -1,5 +1,171 @@
 # Registro de Cambios
 
+## [Semana 3] - Sistema de Puntos y Wallet - 2025-12-14
+
+### Implementado
+
+#### Servicios de Negocio
+- **Points Service** (`src/services/points.service.js`)
+  - `addPoints()` - Agregar puntos a usuarios (admin) con transacciones ACID
+  - `redeemBenefit()` - Canjear beneficios con validaciones exhaustivas
+  - `getWalletBalance()` - Obtener saldo y últimas transacciones
+  - `getTransactionHistory()` - Historial paginado completo
+  - Uso de transacciones Prisma para garantizar atomicidad
+  - Control de concurrencia optimista (OCC) en wallet y benefits
+  - Validaciones de saldo, stock y estado antes de transacciones
+
+#### Controladores
+- **Points Controller** (`src/controllers/points.controller.js`)
+  - `POST /api/v1/points/add` - Agregar puntos (solo admin)
+  - `POST /api/v1/points/redeem` - Canjear beneficio (usuario)
+
+- **Wallet Controller** (`src/controllers/wallet.controller.js`)
+  - `GET /api/v1/wallet/balance` - Balance y últimos movimientos
+  - `GET /api/v1/wallet/transactions` - Historial paginado
+
+#### Validaciones
+- **Esquemas Zod** (`src/validators/schemas.js`)
+  - `addPointsSchema` - Validación para agregar puntos (userId, points, description)
+  - `redeemBenefitSchema` - Validación para canjear (benefitId UUID)
+  - Validación de puntos > 0 y <= 1,000,000
+  - Validación de descripción (3-500 caracteres)
+
+#### Rutas
+- **Points Routes** (`src/routes/points.routes.js`)
+  - POST /add - Autenticación + Admin + Validación
+  - POST /redeem - Autenticación + Validación
+
+- **Wallet Routes** (`src/routes/wallet.routes.js`)
+  - GET /balance - Autenticación + Query param limit
+  - GET /transactions - Autenticación + Paginación
+
+#### Transacciones ACID
+- Uso de `prisma.$transaction()` para operaciones atómicas
+- Rollback automático si cualquier operación falla
+- Garantías ACID:
+  - **Atomicidad**: Todo o nada (wallet + stock + historial)
+  - **Consistencia**: Datos siempre válidos
+  - **Aislamiento**: OCC previene race conditions
+  - **Durabilidad**: Cambios persisten
+
+#### Control de Concurrencia
+- Campo `version` en Wallet y Benefit
+- Incremento automático en cada actualización
+- Error P2025 capturado y manejado (409 Conflict)
+- Prevención de race conditions en canjes simultáneos
+
+### Flujos Implementados
+
+#### Agregar Puntos (Admin)
+1. Validar que el usuario existe
+2. Validar que tiene wallet
+3. TRANSACCIÓN:
+   - Actualizar saldo wallet (con OCC)
+   - Crear registro tipo EARNED en historial
+   - Guardar metadata (saldoAnterior, saldoNuevo, adminId)
+4. Retornar saldo actualizado y transacción
+
+#### Canjear Beneficio (Usuario)
+1. Validar usuario existe y tiene wallet
+2. Validar beneficio existe, está activo y tiene stock
+3. Validar saldo suficiente
+4. TRANSACCIÓN:
+   - Descontar puntos de wallet (con OCC)
+   - Reducir stock de beneficio (con OCC)
+   - Crear registro tipo SPENT en historial
+   - Guardar metadata (saldoAnterior, saldoNuevo)
+5. Retornar resultado completo
+
+### Documentación
+- `PUNTOS_WALLET.md` - Documentación completa de endpoints y arquitectura
+- `TESTS_PUNTOS.md` - Guía de testing manual con casos de prueba
+- Ejemplos con PowerShell y cURL
+- Documentación de transacciones ACID
+- Guía de control de concurrencia
+
+### Tests Realizados
+
+#### Funcionalidad
+- Agregar 500 puntos: OK (saldo 0 -> 500)
+- Canjear beneficio 200pts: OK (saldo 500 -> 300, stock 10 -> 9)
+- Ver balance con historial: OK
+- Transacciones tipo EARNED y SPENT creadas correctamente
+
+#### Validaciones
+- Error saldo insuficiente: OK (400)
+- Error beneficio no existe: OK (404)
+- Error sin autenticación: OK (401)
+- Error usuario no admin: OK (403)
+- Validaciones Zod funcionando
+
+#### Transacciones ACID
+- Atomicidad verificada: canje completo o rollback total
+- Metadata guardada correctamente en transacciones
+- Historial inmutable preservado
+
+### Archivos Creados/Modificados
+
+#### Nuevos Archivos
+```
+src/
+├── services/
+│   └── points.service.js           [NUEVO]
+├── controllers/
+│   ├── points.controller.js        [NUEVO]
+│   └── wallet.controller.js        [NUEVO]
+└── routes/
+    ├── points.routes.js            [NUEVO]
+    └── wallet.routes.js            [NUEVO]
+
+docs/
+├── PUNTOS_WALLET.md                [NUEVO]
+└── TESTS_PUNTOS.md                 [NUEVO]
+```
+
+#### Archivos Modificados
+```
+src/
+├── validators/
+│   └── schemas.js                  [ACTUALIZADO - addPointsSchema agregado]
+└── server.js                       [ACTUALIZADO - Rutas integradas]
+```
+
+### Endpoints Disponibles
+
+#### Admin (Requieren rol ADMIN)
+- `POST /api/v1/points/add` - Agregar puntos a usuarios
+
+#### Usuario (Requieren autenticación)
+- `POST /api/v1/points/redeem` - Canjear beneficio por puntos
+- `GET /api/v1/wallet/balance` - Ver saldo y últimos movimientos
+- `GET /api/v1/wallet/transactions` - Historial completo paginado
+
+### Mejoras de Seguridad
+
+#### Validaciones Exhaustivas
+- Saldo suficiente antes de canje
+- Stock disponible verificado
+- Beneficio activo y existente
+- Puntos siempre positivos
+
+#### Integridad de Datos
+- Transacciones atómicas garantizan consistencia
+- OCC previene double-spending
+- Historial inmutable (solo insert, nunca update/delete)
+- Metadata JSON para datos adicionales sin cambiar schema
+
+### Próximos Pasos (Semana 4+)
+
+Con el sistema de puntos completo, ahora se puede:
+1. CRUD de usuarios (admin)
+2. CRUD de beneficios (admin)
+3. CRUD de noticias (admin)
+4. Sistema de notificaciones
+5. Reportes y estadísticas
+6. Tests automatizados
+
+---
+
 ## [Hotfix] - Auditoría Post-Semana 2 - 2025-12-14
 
 ### Correcciones Implementadas

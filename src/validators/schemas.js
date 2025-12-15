@@ -155,6 +155,25 @@ export const redeemBenefitSchema = z.object({
     .uuid('ID de beneficio inválido'),
 });
 
+// Esquema para agregar puntos (admin)
+export const addPointsSchema = z.object({
+  userId: z
+    .string({ required_error: 'El ID del usuario es requerido' })
+    .uuid('ID de usuario inválido'),
+  
+  points: z
+    .number({ required_error: 'La cantidad de puntos es requerida' })
+    .int('La cantidad debe ser un número entero')
+    .positive('La cantidad debe ser mayor a 0')
+    .max(1000000, 'No se pueden agregar más de 1,000,000 puntos a la vez'),
+  
+  description: z
+    .string({ required_error: 'La descripción es requerida' })
+    .min(3, 'La descripción debe tener al menos 3 caracteres')
+    .max(500, 'La descripción no puede exceder 500 caracteres')
+    .trim(),
+});
+
 // Esquema para consultas paginadas
 export const paginationSchema = z.object({
   page: z
