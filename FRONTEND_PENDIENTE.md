@@ -5,7 +5,7 @@ El frontend móvil con React Native + Expo aún no ha sido creado en este worksp
 
 ---
 
-## 📱 Paso 2: Inteligencia en el Frontend (Roles)
+## Paso 2: Inteligencia en el Frontend (Roles)
 
 ### Contexto
 La App Móvil necesita saber si quien se logueó es "Juan Pérez" (Usuario) o "Mati Mechada" (Comercio), porque ven pantallas distintas.
@@ -19,22 +19,19 @@ La App Móvil necesita saber si quien se logueó es "Juan Pérez" (Usuario) o "M
 const login = async (email, password) => {
   try {
     const response = await api.post('/auth/login', { email, password });
-    const { token, user } = response.data.data; // Ajustar según estructura del backend
+    const { token, user } = response.data.data;
     
-    // Guardamos todo en el estado
     setAuthState({
       token: token,
       authenticated: true,
       user: user,
-      role: user.rol // <--- ¡IMPORTANTE! Guardar el rol (USER, ADMIN, MERCHANT)
+      role: user.rol
     });
     
-    // Guardar en almacenamiento local (AsyncStorage)
     await AsyncStorage.setItem('userToken', token);
     await AsyncStorage.setItem('userRole', user.rol); 
     await AsyncStorage.setItem('userData', JSON.stringify(user));
     
-    // Configurar header de axios para futuras peticiones
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
   } catch (error) {
@@ -42,7 +39,6 @@ const login = async (email, password) => {
   }
 };
 
-// También en la función de inicialización (al abrir la app)
 const loadStoredAuth = async () => {
   try {
     const token = await AsyncStorage.getItem('userToken');
@@ -68,7 +64,7 @@ const loadStoredAuth = async () => {
 
 ---
 
-## 📷 Paso 3: El "Súper Escáner" (Frontend)
+## Paso 3: El "Súper Escáner" (Frontend)
 
 ### Contexto
 La pantalla `scan.js` debe ser inteligente según el rol del usuario:
@@ -106,7 +102,6 @@ export default function ScanScreen() {
 
     try {
       if (userRole === 'MERCHANT') {
-        // --- Lógica de Comercio (Validar Cupón) ---
         const response = await api.post('/merchant/validate-qr', { 
           transactionId: data 
         });
@@ -115,27 +110,25 @@ export default function ScanScreen() {
         const cliente = response.data.data.cliente;
         
         Alert.alert(
-          '✅ Cupón Validado', 
+          'Cupón Validado', 
           `Entregar: ${beneficio}\nCliente: ${cliente}`,
           [{ text: 'OK', onPress: () => setScanned(false) }]
         );
         
       } else {
-        // --- Lógica de Usuario (Ganar Puntos) ---
-        // data suele ser "RECICLAR:50" o "VOLUNTARIADO:100"
         const response = await api.post('/points/scan', { qrCode: data });
         
         const puntos = response.data.data.puntosGanados || response.data.data.points;
         
         Alert.alert(
-          '🎉 ¡Puntos Ganados!', 
+          '¡Puntos Ganados!', 
           `Has sumado ${puntos} puntos`,
           [{ text: 'Genial', onPress: () => setScanned(false) }]
         );
       }
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Código no válido';
-      Alert.alert('❌ Error', errorMsg, [
+      Alert.alert('Error', errorMsg, [
         { text: 'Reintentar', onPress: () => setScanned(false) }
       ]);
     }
@@ -158,8 +151,8 @@ export default function ScanScreen() {
         <View style={styles.overlay}>
           <Text style={styles.title}>
             {userRole === 'MERCHANT' 
-              ? '📱 Escanea el cupón del cliente' 
-              : '♻️ Escanea código QR para ganar puntos'}
+              ? 'Escanea el cupón del cliente' 
+              : 'Escanea código QR para ganar puntos'}
           </Text>
           
           {scanned && (
@@ -215,7 +208,7 @@ const styles = StyleSheet.create({
 
 ---
 
-## 🧪 Testing del Flujo Completo
+## Testing del Flujo Completo
 
 ### Escenario 1: Usuario Normal (Juan Pérez)
 1. Login con `juan@example.com` / `user123`
@@ -223,7 +216,7 @@ const styles = StyleSheet.create({
 3. Ir a tab "Escanear"
 4. Escanear QR: `RECICLAR:50`
 5. Debe llamar a `POST /api/v1/points/scan`
-6. Mostrar: "🎉 ¡Has sumado 50 puntos!"
+6. Mostrar: "¡Has sumado 50 puntos!"
 
 ### Escenario 2: Comercio (Mati Mechada)
 1. Login con `mati@mechada.com` / `merchant123`
@@ -232,11 +225,11 @@ const styles = StyleSheet.create({
 4. Cliente muestra su QR con UUID del cupón
 5. Escanear QR: `550e8400-e29b-41d4-a716-446655440000`
 6. Debe llamar a `POST /api/v1/merchant/validate-qr`
-7. Mostrar: "✅ Cupón Validado - Entregar: Pizza 2x1 - Cliente: Juan Pérez"
+7. Mostrar: "Cupón Validado - Entregar: Descuento 10% en Supermercado Local - Cliente: Juan Pérez"
 
 ---
 
-## 📋 Checklist de Implementación
+## Checklist de Implementación
 
 - [ ] Crear directorio `client/` con Expo
 - [ ] Implementar `AuthContext.js` con manejo de roles
@@ -249,7 +242,7 @@ const styles = StyleSheet.create({
 
 ---
 
-## 🎯 Beneficios de Esta Arquitectura
+## Beneficios de Esta Arquitectura
 
 1. **Un solo escáner para dos propósitos** (DRY principle)
 2. **Roles manejados desde el backend** (seguridad)
@@ -259,7 +252,7 @@ const styles = StyleSheet.create({
 
 ---
 
-## 🔗 Endpoints Utilizados
+## Endpoints Utilizados
 
 ### Para Usuarios (USER)
 ```

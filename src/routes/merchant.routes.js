@@ -33,7 +33,7 @@ router.post(
 
       res.json({
         success: true,
-        message: '✅ Cupón validado exitosamente',
+        message: 'Cupón validado exitosamente',
         data: {
           beneficio: result.benefit.titulo,
           cliente: result.user.nombre,

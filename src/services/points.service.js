@@ -141,13 +141,13 @@ export const redeemBenefit = async (userId, benefitId) => {
       const updatedBenefit = await tx.benefit.updateMany({
         where: {
           id: benefitId,
-          version: benefit.version, // ← CLAVE: Solo actualiza si la versión coincide
-          stock: { gt: 0 },          // ← Extra: Verificar stock > 0
+          version: benefit.version,
+          stock: { gt: 0 },
           activo: true,
         },
         data: {
           stock: { decrement: 1 },
-          version: { increment: 1 }, // ← Incrementar versión
+          version: { increment: 1 },
         },
       });
 
@@ -197,9 +197,9 @@ export const redeemBenefit = async (userId, benefitId) => {
             saldoNuevo,
             benefitTitle: benefit.titulo,
             benefitCategory: benefit.categoria,
-            status: 'PENDING', // ← Estado inicial (no validado por comercio)
+            status: 'PENDING',
             generatedAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 días
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           },
         },
       });

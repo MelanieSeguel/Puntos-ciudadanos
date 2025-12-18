@@ -128,11 +128,10 @@ export const redeemBenefit = asyncHandler(async (req, res) => {
         descripcion: result.transaction.descripcion,
         fecha: result.transaction.fecha
       },
-      // ← NUEVO: Información del QR para mostrar al usuario
       cupon: {
-        transactionId: result.transaction.id, // ← El merchant escaneará este ID
-        qrData: result.transaction.id,        // ← Para generar el QR visual
-        estado: 'PENDIENTE',                   // ← Estado inicial
+        transactionId: result.transaction.id,
+        qrData: result.transaction.id,
+        estado: 'PENDIENTE',
         instrucciones: 'Muestra este código al comercio para canjear tu beneficio',
         validoHasta: result.transaction.metadata?.expiresAt,
       }
