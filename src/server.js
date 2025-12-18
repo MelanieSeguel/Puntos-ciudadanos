@@ -110,6 +110,14 @@ app.use(`/api/${config.apiVersion}/auth`, authRoutes);
 import merchantRoutes from './routes/merchant.routes.js';
 app.use(`/api/${config.apiVersion}/merchant`, merchantRoutes);
 
+// Points routes
+import pointsRoutes from './routes/points.routes.js';
+app.use(`/api/${config.apiVersion}/points`, pointsRoutes);
+
+// Benefits routes
+import benefitsRoutes from './routes/benefits.routes.js';
+app.use(`/api/${config.apiVersion}/benefits`, benefitsRoutes);
+
 // TODO: Implementar rutas adicionales
 // import userRoutes from './routes/user.routes.js';
 // import walletRoutes from './routes/wallet.routes.js';
