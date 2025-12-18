@@ -106,6 +106,10 @@ app.get(`/api/${config.apiVersion}`, (req, res) => {
 // Auth routes
 app.use(`/api/${config.apiVersion}/auth`, authRoutes);
 
+// Merchant routes
+import merchantRoutes from './routes/merchant.routes.js';
+app.use(`/api/${config.apiVersion}/merchant`, merchantRoutes);
+
 // TODO: Implementar rutas adicionales
 // import userRoutes from './routes/user.routes.js';
 // import walletRoutes from './routes/wallet.routes.js';

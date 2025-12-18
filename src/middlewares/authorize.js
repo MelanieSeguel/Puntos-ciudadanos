@@ -36,6 +36,16 @@ export const authorize = (...allowedRoles) => {
 export const isAdmin = authorize('ADMIN');
 
 /**
+ * Middleware para verificar que el usuario es un comercio
+ */
+export const isMerchant = authorize('MERCHANT');
+
+/**
+ * Middleware para verificar que el usuario es comercio o admin
+ */
+export const isMerchantOrAdmin = authorize('MERCHANT', 'ADMIN');
+
+/**
  * Middleware para verificar que el usuario es el propietario del recurso
  * @param {string} paramName - Nombre del parámetro que contiene el userId (default: 'userId')
  */
