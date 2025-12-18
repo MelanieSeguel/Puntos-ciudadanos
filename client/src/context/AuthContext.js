@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
 import api from '../services/api';
+import { secureStorage } from '../utils/secureStorage';
 
 export const AuthContext = createContext();
 
@@ -21,7 +22,7 @@ export const AuthProvider = ({ children }) => {
 
   const loadStoredAuth = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await secureStorage.getItemAsync('userToken');
       const userData = await AsyncStorage.getItem('userData');
       const userRole = await AsyncStorage.getItem('userRole');
 
@@ -64,8 +65,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login(email, password);
       const { token, user } = response.data.data;
 
-      // Guardar en AsyncStorage
-      await AsyncStorage.setItem('userToken', token);
+      // Guardar token en SecureStore (seguro) y datos de usuario en AsyncStorage
+      await secureStorage.setItemAsync('userToken', token);
       await AsyncStorage.setItem('userData', JSON.stringify(user));
       await AsyncStorage.setItem('userRole', user.rol);
 
@@ -94,8 +95,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(nombre, email, password, confirmPassword);
       const { token, user } = response.data.data;
 
-      // Guardar en AsyncStorage
-      await AsyncStorage.setItem('userToken', token);
+      // Guardar token en SecureStore (seguro) y datos de usuario en AsyncStorage
+      await secureStorage.setItemAsync('userToken', token);
       await AsyncStorage.setItem('userData', JSON.stringify(user));
       await AsyncStorage.setItem('userRole', user.rol);
 
@@ -121,8 +122,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Limpiar AsyncStorage
-      await AsyncStorage.multiRemove(['userToken', 'userData', 'userRole']);
+      // Limpiar token de SecureStore y datos de AsyncStorage
+      await secureStorage.deleteItemAsync('userToken');
+      await AsyncStorage.multiRemove(['userData', 'userRole']);
 
       // Limpiar header de axios
       delete api.defaults.headers.common['Authorization'];

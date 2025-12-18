@@ -1,11 +1,14 @@
 import React, { useContext } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
-import LoginScreen from './src/screens/LoginScreen';
-import HomeScreen from './src/screens/HomeScreen';
 
-// Componente principal que decide qué pantalla mostrar
+// Navegadores
+import AuthNavigator from './src/navigation/AuthNavigator';
+import MainNavigator from './src/navigation/MainNavigator';
+
+// Componente principal que decide qué navegador mostrar
 function AppContent() {
   const { authState } = useContext(AuthContext);
 
@@ -18,16 +21,18 @@ function AppContent() {
     );
   }
 
-  // Si está autenticado, mostrar Home, sino Login
-  return authState.authenticated ? <HomeScreen /> : <LoginScreen />;
+  // Si está autenticado, mostrar navegación principal, sino navegación de auth
+  return authState.authenticated ? <MainNavigator /> : <AuthNavigator />;
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-      <StatusBar style="auto" />
-    </AuthProvider>
+    <NavigationContainer>
+      <AuthProvider>
+        <AppContent />
+        <StatusBar style="auto" />
+      </AuthProvider>
+    </NavigationContainer>
   );
 }
 

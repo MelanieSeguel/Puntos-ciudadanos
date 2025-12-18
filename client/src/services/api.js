@@ -1,7 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { secureStorage } from '../utils/secureStorage';
 
-const API_URL = 'http://192.168.1.82:3000/api/v1';
+// Configuración dinámica de la API URL usando variables de entorno
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -15,7 +17,7 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await secureStorage.getItemAsync('userToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -34,8 +36,9 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Token inválido o expirado
-      await AsyncStorage.multiRemove(['userToken', 'userData', 'userRole']);
+      // Token inválido o expirado - limpiar de ambos almacenamientos
+      await secureStorage.deleteItemAsync('userToken');
+      await AsyncStorage.multiRemove(['userData', 'userRole']);
     }
     return Promise.reject(error);
   }
