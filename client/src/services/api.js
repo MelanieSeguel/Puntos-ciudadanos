@@ -50,6 +50,13 @@ export const authAPI = {
   register: (nombre, email, password, confirmPassword) => 
     api.post('/auth/register', { nombre, email, password, confirmPassword }),
   getProfile: () => api.get('/auth/profile'),
+  getMe: () => api.get('/auth/me'),
+};
+
+// Servicios de usuario
+export const userAPI = {
+  getTransactions: (limit = 10) => api.get(`/users/transactions?limit=${limit}`),
+  getTransactionHistory: () => api.get('/users/transactions'),
 };
 
 // Servicios de wallet
