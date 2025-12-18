@@ -74,12 +74,12 @@ async function main() {
 
     console.log('Usuarios ciudadanos creados con sus wallets');
 
-    // Crear Comercio (Pizzería Mati Mechada)
+    // Crear Comercio (Mati Mechada)
     const merchantPasswordHash = await bcrypt.hash('merchant123', 12);
     
     const merchant = await prisma.user.create({
       data: {
-        nombre: 'Pizzería Mati Mechada',
+        nombre: 'Mati Mechada',
         email: 'mati@mechada.com',
         passwordHash: merchantPasswordHash,
         rol: 'MERCHANT',
