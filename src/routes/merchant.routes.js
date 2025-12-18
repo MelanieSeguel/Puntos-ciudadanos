@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.js';
 import { isMerchantOrAdmin } from '../middlewares/authorize.js';
 import prisma from '../config/database.js';
+import * as pointsService from '../services/points.service.js';
 
 const router = Router();
 
@@ -9,6 +10,7 @@ const router = Router();
  * POST /api/v1/merchant/validate-qr
  * El comercio escanea el QR del cliente (que contiene el transactionId)
  * Solo comercios y admins
+ * REFACTORIZADO: Usa la lógica centralizada del servicio
  */
 router.post(
   '/validate-qr',
@@ -17,84 +19,36 @@ router.post(
   async (req, res) => {
     try {
       const { transactionId } = req.body;
+      const merchantId = req.user.id;
 
       if (!transactionId) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Se requiere el ID de la transacción (QR)' 
+          message: 'Falta el ID del cupón' 
         });
       }
 
-      // 1. Buscar la transacción con todas las relaciones necesarias
-      const transaction = await prisma.pointTransaction.findUnique({
-        where: { id: transactionId },
-        include: { 
-          wallet: {
-            include: {
-              user: true  // Usuario dueño del wallet
-            }
-          },
-          benefit: true 
-        }
-      });
+      // Usamos la lógica centralizada del servicio
+      const result = await pointsService.validateRedemption(transactionId, merchantId);
 
-      // 2. Validaciones de Seguridad
-      if (!transaction) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Cupón no válido o no existe.' 
-        });
-      }
-
-      if (transaction.tipo !== 'SPENT') {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Este QR no corresponde a un canje de beneficio.' 
-        });
-      }
-
-      // Revisar si ya fue usado
-      const metadata = transaction.metadata || {};
-      if (metadata.status === 'CLAIMED') {
-        const claimedDate = new Date(metadata.claimedAt).toLocaleDateString('es-CL');
-        return res.status(409).json({ 
-          success: false, 
-          message: `Este cupón YA FUE USADO el ${claimedDate}` 
-        });
-      }
-
-      // 3. Marcar como USADO (Quemado del cupón)
-      await prisma.pointTransaction.update({
-        where: { id: transactionId },
-        data: {
-          metadata: {
-            ...metadata,
-            status: 'CLAIMED',
-            claimedAt: new Date().toISOString(),
-            validatedBy: req.user.id,
-            validatedByName: req.user.nombre
-          }
-        }
-      });
-
-      // 4. Responder con Éxito
       res.json({
         success: true,
-        message: 'Cupón válido. Entregar beneficio al cliente',
+        message: '✅ Cupón validado exitosamente',
         data: {
-          beneficio: transaction.benefit?.titulo || 'Beneficio',
-          cliente: transaction.wallet?.user?.nombre || 'Cliente',
-          fechaCanje: transaction.fecha,
-          puntosUsados: transaction.monto,
+          beneficio: result.benefit.titulo,
+          cliente: result.user.nombre,
+          fecha: new Date().toISOString(),
+          puntosUsados: result.transaction.monto,
           comercio: req.user.nombre
         }
       });
 
     } catch (error) {
-      console.error('Error validando QR:', error);
-      res.status(500).json({ 
+      // Manejo de errores estándar usando los errores del servicio
+      const status = error.statusCode || 500;
+      res.status(status).json({ 
         success: false, 
-        message: 'Error interno al validar cupón.' 
+        message: error.message || 'Error al validar cupón' 
       });
     }
   }

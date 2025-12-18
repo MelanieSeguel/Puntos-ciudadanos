@@ -41,8 +41,8 @@ export const addPoints = async (userId, points, description, adminId) => {
 
   // Realizar transacción atómica
   const result = await prisma.$transaction(async (tx) => {
-    // Actualizar wallet con control de concurrencia
-    const updatedWallet = await tx.wallet.update({
+    // Actualizar wallet con control de concurrencia usando updateMany
+    const updatedCount = await tx.wallet.updateMany({
       where: {
         id: wallet.id,
         version: wallet.version, // Optimistic locking
@@ -51,6 +51,16 @@ export const addPoints = async (userId, points, description, adminId) => {
         saldoActual: saldoNuevo,
         version: { increment: 1 },
       },
+    });
+
+    // Si no se actualizó ningún registro, significa que la versión cambió
+    if (updatedCount.count === 0) {
+      throw new ConcurrencyError('El wallet fue modificado por otro proceso');
+    }
+
+    // Obtener el wallet actualizado
+    const updatedWallet = await tx.wallet.findUnique({
+      where: { id: wallet.id },
     });
 
     // Crear registro de transacción
@@ -153,7 +163,7 @@ export const redeemBenefit = async (userId, benefitId) => {
       }
 
       // B) Actualizar wallet del usuario con su propia versión
-      const updatedWallet = await tx.wallet.update({
+      const walletUpdateCount = await tx.wallet.updateMany({
         where: {
           id: wallet.id,
           version: wallet.version,
@@ -162,6 +172,16 @@ export const redeemBenefit = async (userId, benefitId) => {
           saldoActual: saldoNuevo,
           version: { increment: 1 },
         },
+      });
+
+      // Si no se actualizó, significa que la versión del wallet cambió
+      if (walletUpdateCount.count === 0) {
+        throw new ConcurrencyError('Tu saldo fue modificado. Intenta nuevamente.');
+      }
+
+      // Obtener wallet actualizado
+      const updatedWallet = await tx.wallet.findUnique({
+        where: { id: wallet.id },
       });
 
       // C) Crear transacción de canje con metadata para el QR
@@ -244,7 +264,9 @@ export const getUserRedemptions = async (userId) => {
 
 /**
  * Validar QR de canje (usado por el merchant)
- * Esta función ahora está en merchant.routes.js pero podría moverse aquí
+ * @param {string} transactionId - ID de la transacción (cupón)
+ * @param {string} merchantId - ID del comercio que valida
+ * @returns {Promise<{transaction, user, benefit}>}
  */
 export const validateRedemption = async (transactionId, merchantId) => {
   const transaction = await prisma.pointTransaction.findUnique({
@@ -273,6 +295,12 @@ export const validateRedemption = async (transactionId, merchantId) => {
     throw new AppError(`Este cupón ya fue usado el ${claimedDate}`, 409);
   }
 
+  // Obtener información del merchant
+  const merchant = await prisma.user.findUnique({
+    where: { id: merchantId },
+    select: { nombre: true },
+  });
+
   // Marcar como validado
   const updated = await prisma.pointTransaction.update({
     where: { id: transactionId },
@@ -282,6 +310,7 @@ export const validateRedemption = async (transactionId, merchantId) => {
         status: 'CLAIMED',
         claimedAt: new Date().toISOString(),
         validatedBy: merchantId,
+        validatedByName: merchant?.nombre || 'Comercio',
       },
     },
   });
