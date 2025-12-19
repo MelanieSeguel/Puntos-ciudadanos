@@ -211,36 +211,6 @@ export default function UserHomeScreen({ navigation }) {
           </View>
         )}
 
-        {/* Acciones Rápidas */}
-        <View style={styles.quickActionsSection}>
-          <Text style={styles.sectionTitle}>Acciones</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity
-              style={styles.quickAction}
-              onPress={() => navigation.navigate('Gana Puntos')}
-            >
-              <MaterialCommunityIcons name="star" size={28} color={COLORS.primary} />
-              <Text style={styles.quickActionLabel}>Ganar Puntos</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickAction}
-              onPress={() => navigation.navigate('Beneficios')}
-            >
-              <MaterialCommunityIcons name="gift" size={28} color={COLORS.primary} />
-              <Text style={styles.quickActionLabel}>Beneficios</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickAction}
-              onPress={() => navigation.navigate('Configuración')}
-            >
-              <MaterialCommunityIcons name="cog" size={28} color={COLORS.primary} />
-              <Text style={styles.quickActionLabel}>Ajustes</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Botón de Logout */}
         <View style={styles.logoutSection}>
           <TouchableOpacity
@@ -444,30 +414,6 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '600',
     fontSize: 12,
-  },
-  quickActionsSection: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: SPACING.md,
-  },
-  quickAction: {
-    alignItems: 'center',
-    padding: SPACING.md,
-    borderRadius: 8,
-    backgroundColor: COLORS.light,
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  quickActionLabel: {
-    color: COLORS.dark,
-    fontSize: TYPOGRAPHY.caption,
-    fontWeight: '600',
-    marginTop: SPACING.sm,
-    textAlign: 'center',
   },
   logoutSection: {
     marginHorizontal: SPACING.md,
