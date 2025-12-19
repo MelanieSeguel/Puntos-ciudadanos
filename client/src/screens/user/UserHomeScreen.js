@@ -176,22 +176,8 @@ export default function UserHomeScreen({ navigation }) {
       .toUpperCase();
   };
 
-  const getMonthName = () => {
-    const months = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
-    return months[new Date().getMonth()];
-  };
-
-  const getDayName = () => {
-    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    const today = new Date();
-    return `${days[today.getDay()]}, ${today.getDate()} ${getMonthName()} ${today.getFullYear()}`;
-  };
-
   return (
-    <ScreenWrapper bgColor={COLORS.white}>
+    <ScreenWrapper bgColor={COLORS.white} padding={0} maxWidth={false}>
       {/* HEADER FIJO EN WEB */}
       {Platform.OS === 'web' && (
         <View style={styles.fixedHeader}>
@@ -248,13 +234,9 @@ export default function UserHomeScreen({ navigation }) {
           </View>
         )}
 
-        {/* SALUDO Y FECHA */}
+        {/* SALUDO */}
         <View style={styles.greeting}>
           <Text style={styles.greetingText}>Hola, {userData.nombre} 👋</Text>
-          <View style={styles.dateContainer}>
-            <MaterialCommunityIcons name="calendar" size={16} color={COLORS.gray} />
-            <Text style={styles.dateText}>{getDayName()}</Text>
-          </View>
         </View>
 
         {/* CONTENEDOR PRINCIPAL (BALANCE + STATS) */}
@@ -436,6 +418,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#EFEFEF',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
+    paddingTop: SPACING.md,
+    paddingRight: SPACING.md,
   },
   headerContent: {
     flexDirection: 'row',
@@ -443,9 +427,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   scrollContent: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: Platform.OS === 'web' ? SPACING.sm : SPACING.md,
-    paddingTop: Platform.OS === 'web' ? 100 : SPACING.lg,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    paddingTop: Platform.OS === 'web' ? 90 : SPACING.lg,
     minHeight: '100vh',
   },
   centerContainer: {
@@ -472,6 +456,7 @@ const styles = StyleSheet.create({
   headerRight: {
     alignItems: 'flex-end',
     gap: SPACING.md,
+    flexDirection: 'row',
   },
   pointsBadge: {
     backgroundColor: '#FFF8E1',
@@ -524,6 +509,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.md,
   },
   greetingText: {
     fontSize: 24,
@@ -545,6 +531,8 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     flex: Platform.OS === 'web' ? 1 : undefined,
+    paddingHorizontal: SPACING.md,
+    alignItems: Platform.OS === 'web' ? 'flex-start' : undefined,
   },
   balanceCard: {
     backgroundColor: COLORS.white,
@@ -711,6 +699,7 @@ const styles = StyleSheet.create({
   },
   earnSection: {
     marginBottom: SPACING.xl,
+    paddingHorizontal: SPACING.md,
   },
   earnHeader: {
     flexDirection: 'row',
@@ -771,6 +760,7 @@ const styles = StyleSheet.create({
   },
   benefitsSection: {
     marginBottom: SPACING.xl,
+    paddingHorizontal: SPACING.md,
   },
   sectionTitle: {
     fontSize: 16,
