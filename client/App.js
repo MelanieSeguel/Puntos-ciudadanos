@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import SplashScreen from './src/screens/SplashScreen';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import UserNavigator from './src/navigation/UserNavigator';
@@ -26,6 +27,78 @@ const RootStack = createNativeStackNavigator();
  * 3. Si hay usuario: Navigator según su rol
  */
 function RootNavigator({ authState }) {
+  // Mientras está cargando
+  if (authState.loading) {
+    return (
+      <RootStack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animationEnabled: false,
+        }}
+      >
+        <RootStack.Screen
+          name="Splash"
+          component={SplashScreen}
+          options={{ animationEnabled: false }}
+        />
+      </RootStack.Navigator>
+    );
+  }
+
+  // Si no está autenticado
+  if (!authState.authenticated) {
+    return (
+      <RootStack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animationEnabled: true,
+        }}
+      >
+        <RootStack.Screen
+          name="Auth"
+          component={AuthNavigator}
+          options={{ animationEnabled: false }}
+        />
+      </RootStack.Navigator>
+    );
+  }
+
+  // Si está autenticado, mostrar navigator según rol
+  if (authState.role === 'MERCHANT') {
+    return (
+      <RootStack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animationEnabled: true,
+        }}
+      >
+        <RootStack.Screen
+          name="MerchantApp"
+          component={MerchantNavigator}
+          options={{ animationEnabled: false }}
+        />
+      </RootStack.Navigator>
+    );
+  }
+
+  if (authState.role === 'ADMIN') {
+    return (
+      <RootStack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animationEnabled: true,
+        }}
+      >
+        <RootStack.Screen
+          name="AdminApp"
+          component={AdminNavigator}
+          options={{ animationEnabled: false }}
+        />
+      </RootStack.Navigator>
+    );
+  }
+
+  // Por defecto USER (o sin rol definido)
   return (
     <RootStack.Navigator
       screenOptions={{
@@ -33,43 +106,11 @@ function RootNavigator({ authState }) {
         animationEnabled: true,
       }}
     >
-      {authState.loading ? (
-        <RootStack.Screen
-          name="Splash"
-          component={SplashScreen}
-          options={{ animationEnabled: false }}
-        />
-      ) : !authState.authenticated ? (
-        <RootStack.Screen
-          name="Auth"
-          component={AuthNavigator}
-          options={{ animationEnabled: false }}
-        />
-      ) : (
-        <>
-          {authState.role === 'MERCHANT' && (
-            <RootStack.Screen
-              name="MerchantApp"
-              component={MerchantNavigator}
-              options={{ animationEnabled: false }}
-            />
-          )}
-          {authState.role === 'ADMIN' && (
-            <RootStack.Screen
-              name="AdminApp"
-              component={AdminNavigator}
-              options={{ animationEnabled: false }}
-            />
-          )}
-          {(authState.role === 'USER' || !authState.role) && (
-            <RootStack.Screen
-              name="UserApp"
-              component={UserNavigator}
-              options={{ animationEnabled: false }}
-            />
-          )}
-        </>
-      )}
+      <RootStack.Screen
+        name="UserApp"
+        component={UserNavigator}
+        options={{ animationEnabled: false }}
+      />
     </RootStack.Navigator>
   );
 }
@@ -102,12 +143,14 @@ function AppContent() {
  */
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <AppContent />
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <AppContent />
+          <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+        </AuthProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 

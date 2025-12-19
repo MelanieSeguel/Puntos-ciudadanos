@@ -49,10 +49,17 @@ export const authAPI = {
   getProfile: () => api.get('/auth/profile'),
 };
 
-// Servicios de wallet
+// Servicios de wallet - Obtener datos del usuario autenticado
 export const walletAPI = {
-  getBalance: () => api.get('/wallet/balance'),
-  getTransactions: (limit = 10) => api.get(`/wallet/balance?limit=${limit}`),
+  // Obtener balance desde /auth/me que devuelve user.wallet.saldoActual
+  getBalance: () => api.get('/auth/me'),
+  // NOTA: No hay endpoint de transacciones en el backend actual
+  // Se puede agregar si se requiere historial
+};
+
+// Servicios de usuario autenticado
+export const userAPI = {
+  getMe: () => api.get('/auth/me'),
 };
 
 // Servicios de puntos

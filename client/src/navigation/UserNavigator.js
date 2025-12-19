@@ -36,9 +36,9 @@ export default function UserNavigator() {
           tabBarIcon: ({ focused }) => {
             const iconMap = {
               UserHome: 'home',
-              Benefits: 'gift',
               Earn: 'star',
-              Profile: 'account',
+              Benefits: 'gift',
+              Profile: 'cog',
             };
             return (
               <MaterialCommunityIcons
@@ -55,10 +55,10 @@ export default function UserNavigator() {
         };
       }}
     >
-      <Tab.Screen name="UserHome" component={UserHomeScreen} options={{ title: 'Inicio' }} />
-      <Tab.Screen name="Benefits" component={BenefitsScreen} options={{ title: 'Beneficios' }} />
+      <Tab.Screen name="UserHome" component={UserHomeScreen} options={{ title: 'Estadísticas' }} />
       <Tab.Screen name="Earn" component={EarnScreen} options={{ title: 'Gana Puntos' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />
+      <Tab.Screen name="Benefits" component={BenefitsScreen} options={{ title: 'Beneficios' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Configuración' }} />
     </Tab.Navigator>
   );
 }

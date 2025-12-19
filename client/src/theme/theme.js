@@ -67,12 +67,7 @@ export const TAB_CONFIG = {
   userTabs: [
     {
       name: 'UserHome',
-      label: 'Inicio',
-      color: COLORS.user,
-    },
-    {
-      name: 'Benefits',
-      label: 'Beneficios',
+      label: 'Estadísticas',
       color: COLORS.user,
     },
     {
@@ -81,8 +76,13 @@ export const TAB_CONFIG = {
       color: COLORS.user,
     },
     {
+      name: 'Benefits',
+      label: 'Beneficios',
+      color: COLORS.user,
+    },
+    {
       name: 'Profile',
-      label: 'Perfil',
+      label: 'Configuración',
       color: COLORS.user,
     },
   ],
@@ -90,7 +90,7 @@ export const TAB_CONFIG = {
   merchantTabs: [
     {
       name: 'MerchantDashboard',
-      label: 'Dashboard',
+      label: 'Panel',
       color: COLORS.merchant,
     },
     {
@@ -108,7 +108,7 @@ export const TAB_CONFIG = {
   adminTabs: [
     {
       name: 'AdminDashboard',
-      label: 'Dashboard',
+      label: 'Panel',
       color: COLORS.admin,
     },
     {

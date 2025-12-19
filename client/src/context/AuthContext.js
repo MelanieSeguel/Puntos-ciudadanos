@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
 import api from '../services/api';
+import { getErrorMessage, logError } from '../utils/errorHandler';
 
 export const AuthContext = createContext();
 
@@ -12,6 +13,7 @@ export const AuthProvider = ({ children }) => {
     user: null,
     role: null,
     loading: true,
+    error: null,
   });
 
   // Cargar datos de autenticación al iniciar la app
@@ -27,7 +29,7 @@ export const AuthProvider = ({ children }) => {
 
       if (token && userData) {
         const user = JSON.parse(userData);
-        
+
         // Configurar header de axios
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
@@ -35,8 +37,9 @@ export const AuthProvider = ({ children }) => {
           token,
           authenticated: true,
           user,
-          role: userRole || user.rol,
+          role: userRole || user.role,
           loading: false,
+          error: null,
         });
       } else {
         setAuthState({
@@ -45,29 +48,33 @@ export const AuthProvider = ({ children }) => {
           user: null,
           role: null,
           loading: false,
+          error: null,
         });
       }
     } catch (error) {
-      console.error('Error al cargar autenticación:', error);
+      logError('loadStoredAuth', error);
       setAuthState({
         token: null,
         authenticated: false,
         user: null,
         role: null,
         loading: false,
+        error: getErrorMessage(error),
       });
     }
   };
 
   const login = async (email, password) => {
     try {
+      setAuthState((prev) => ({ ...prev, loading: true, error: null }));
+
       const response = await authAPI.login(email, password);
       const { token, user } = response.data.data;
 
       // Guardar en AsyncStorage
       await AsyncStorage.setItem('userToken', token);
       await AsyncStorage.setItem('userData', JSON.stringify(user));
-      await AsyncStorage.setItem('userRole', user.rol);
+      await AsyncStorage.setItem('userRole', user.role);
 
       // Configurar header de axios
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -77,27 +84,37 @@ export const AuthProvider = ({ children }) => {
         token,
         authenticated: true,
         user,
-        role: user.rol,
+        role: user.role,
         loading: false,
+        error: null,
       });
 
-      return { success: true, user, role: user.rol };
+      return { success: true, user, role: user.role };
     } catch (error) {
-      console.error('Error en login:', error);
-      const message = error.response?.data?.message || 'Error al iniciar sesión';
-      throw new Error(message);
+      const errorMessage = getErrorMessage(error);
+      logError('login', error);
+
+      setAuthState((prev) => ({
+        ...prev,
+        loading: false,
+        error: errorMessage,
+      }));
+
+      throw new Error(errorMessage);
     }
   };
 
-  const register = async (nombre, email, password, confirmPassword) => {
+  const register = async (email, password, name) => {
     try {
-      const response = await authAPI.register(nombre, email, password, confirmPassword);
+      setAuthState((prev) => ({ ...prev, loading: true, error: null }));
+
+      const response = await authAPI.register(email, password, name);
       const { token, user } = response.data.data;
 
       // Guardar en AsyncStorage
       await AsyncStorage.setItem('userToken', token);
       await AsyncStorage.setItem('userData', JSON.stringify(user));
-      await AsyncStorage.setItem('userRole', user.rol);
+      await AsyncStorage.setItem('userRole', user.role);
 
       // Configurar header de axios
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -107,15 +124,23 @@ export const AuthProvider = ({ children }) => {
         token,
         authenticated: true,
         user,
-        role: user.rol,
+        role: user.role,
         loading: false,
+        error: null,
       });
 
-      return { success: true, user, role: user.rol };
+      return { success: true, user, role: user.role };
     } catch (error) {
-      console.error('Error en registro:', error);
-      const message = error.response?.data?.message || 'Error al registrarse';
-      throw new Error(message);
+      const errorMessage = getErrorMessage(error);
+      logError('register', error);
+
+      setAuthState((prev) => ({
+        ...prev,
+        loading: false,
+        error: errorMessage,
+      }));
+
+      throw new Error(errorMessage);
     }
   };
 
@@ -134,9 +159,10 @@ export const AuthProvider = ({ children }) => {
         user: null,
         role: null,
         loading: false,
+        error: null,
       });
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      logError('logout', error);
     }
   };
 
