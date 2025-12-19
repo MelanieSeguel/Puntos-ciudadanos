@@ -74,7 +74,11 @@ export const AuthProvider = ({ children }) => {
       // Guardar en AsyncStorage
       await AsyncStorage.setItem('userToken', token);
       await AsyncStorage.setItem('userData', JSON.stringify(user));
-      await AsyncStorage.setItem('userRole', user.role);
+      
+      // Guardar role solo si existe
+      if (user.role) {
+        await AsyncStorage.setItem('userRole', user.role);
+      }
 
       // Configurar header de axios
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -114,7 +118,11 @@ export const AuthProvider = ({ children }) => {
       // Guardar en AsyncStorage
       await AsyncStorage.setItem('userToken', token);
       await AsyncStorage.setItem('userData', JSON.stringify(user));
-      await AsyncStorage.setItem('userRole', user.role);
+      
+      // Guardar role solo si existe
+      if (user.role) {
+        await AsyncStorage.setItem('userRole', user.role);
+      }
 
       // Configurar header de axios
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -124,7 +132,7 @@ export const AuthProvider = ({ children }) => {
         token,
         authenticated: true,
         user,
-        role: user.role,
+        role: user.role || 'USER',
         loading: false,
         error: null,
       });

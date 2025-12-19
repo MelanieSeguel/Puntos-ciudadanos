@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
@@ -16,10 +18,66 @@ import { walletAPI, benefitsAPI, pointsAPI } from '../../services/api';
 import { getErrorMessage } from '../../utils/errorHandler';
 import { AuthContext } from '../../context/AuthContext';
 
+const { width } = Dimensions.get('window');
+
 export default function UserHomeScreen({ navigation }) {
   const { authState, logout } = useContext(AuthContext);
-  const [balance, setBalance] = useState(null);
-  const [transactions, setTransactions] = useState([]);
+  const [userData, setUserData] = useState({ nombre: 'Usuario', email: '' });
+  const [balance, setBalance] = useState(0);
+  const [monthlyPoints, setMonthlyPoints] = useState(350);
+  const [monthlyGoal] = useState(500);
+  const [activities, setActivities] = useState([
+    {
+      id: 1,
+      title: 'Transporte Ecológico',
+      description: 'Uso de bicicleta compartida por 30 min.',
+      points: '+15',
+      color: '#4CAF50',
+      icon: 'bike',
+      time: 'HACE 2 HORAS',
+    },
+    {
+      id: 2,
+      title: 'Refill de Agua',
+      description: 'Estación de carga Parque Central.',
+      points: '+5',
+      color: '#2196F3',
+      icon: 'water',
+      time: 'AYER, 14:30',
+    },
+    {
+      id: 3,
+      title: 'Canje Recompensa',
+      description: 'Descuento Pizzería Bella Napoli.',
+      points: '-200',
+      color: '#f44336',
+      icon: 'heart',
+      time: '22 OCT, 08:15',
+    },
+  ]);
+  const [earnOptions, setEarnOptions] = useState([
+    {
+      id: 1,
+      title: 'Recicla Vidrio',
+      description: 'Lleva tus botellas al punto limpio más...',
+      points: '+50 pts',
+      icon: 'recycle',
+    },
+    {
+      id: 2,
+      title: 'Voluntariado',
+      description: 'Únete a la limpieza de parques este sábado.',
+      points: '+100 pts',
+      icon: 'hand-heart',
+    },
+    {
+      id: 3,
+      title: 'Dona Ropa',
+      description: 'Dale una segunda vida a tus prendas usadas.',
+      points: '+75 pts',
+      icon: 'tshirt-crew',
+    },
+  ]);
   const [benefits, setBenefits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -34,25 +92,20 @@ export default function UserHomeScreen({ navigation }) {
       setLoading(true);
       setError(null);
 
-      // Cargar datos desde backend
       const [userRes, benefitsRes] = await Promise.all([
-        walletAPI.getBalance(),  // GET /auth/me - devuelve user con wallet.saldoActual
-        benefitsAPI.getAll(),    // GET /benefits
+        walletAPI.getBalance(),
+        benefitsAPI.getAll(),
       ]);
 
-      // Extraer saldo del usuario
-      const userBalance = userRes.data?.data?.wallet?.saldoActual || 0;
-      setBalance(userBalance);
-
-      // Mostrar transacciones vacías ya que no hay endpoint en backend
-      setTransactions([
-        { 
-          id: 'info', 
-          description: 'Historial de transacciones no disponible aún',
-          amount: 0,
-          date: new Date().toISOString().split('T')[0]
-        }
-      ]);
+      // Extraer datos del usuario
+      const user = userRes.data?.data;
+      if (user) {
+        setUserData({
+          nombre: user.nombre || 'Usuario',
+          email: user.email || '',
+        });
+        setBalance(user.wallet?.saldoActual || 0);
+      }
 
       // Extraer beneficios
       const beneficisList = (benefitsRes.data?.data || []).map(b => ({
@@ -81,7 +134,7 @@ export default function UserHomeScreen({ navigation }) {
   };
 
   const handleRedeemBenefit = async (benefitId, points) => {
-    if (!balance || balance < points) {
+    if (balance < points) {
       Alert.alert('Puntos Insuficientes', `Necesitas ${points} puntos para este beneficio`);
       return;
     }
@@ -115,108 +168,253 @@ export default function UserHomeScreen({ navigation }) {
     );
   }
 
+  const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase();
+  };
+
+  const getMonthName = () => {
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return months[new Date().getMonth()];
+  };
+
+  const getDayName = () => {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const today = new Date();
+    return `${days[today.getDay()]}, ${today.getDate()} ${getMonthName()} ${today.getFullYear()}`;
+  };
+
   return (
     <ScreenWrapper bgColor={COLORS.white}>
+      {/* HEADER FIJO EN WEB */}
+      {Platform.OS === 'web' && (
+        <View style={styles.fixedHeader}>
+          <View style={styles.headerContent}>
+            <View>
+              <Text style={styles.headerTitle}>Tus Estadísticas</Text>
+            </View>
+            <View style={styles.headerRight}>
+              <View style={styles.pointsBadge}>
+                <MaterialCommunityIcons name="star" size={16} color="#FFB84D" />
+                <Text style={styles.pointsText}>{balance.toLocaleString()}</Text>
+                <Text style={styles.pointsLabel}>PUNTOS</Text>
+              </View>
+              <View style={styles.userProfile}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{getInitials(userData.nombre)}</Text>
+                </View>
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>{userData.nombre}</Text>
+                  <Text style={styles.userEmail}>{userData.email}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Tarjeta de Saldo */}
-        <View style={styles.balanceCard}>
-          <View style={styles.balanceHeader}>
-            <MaterialCommunityIcons name="wallet" size={32} color={COLORS.white} />
-            <Text style={styles.balanceLabel}>Mis Puntos</Text>
+        {/* HEADER MÓVIL (solo en móvil) */}
+        {Platform.OS !== 'web' && (
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.headerTitle}>Tus Estadísticas</Text>
+            </View>
+            <View style={styles.headerRight}>
+              <View style={styles.pointsBadge}>
+                <MaterialCommunityIcons name="star" size={16} color="#FFB84D" />
+                <Text style={styles.pointsText}>{balance.toLocaleString()}</Text>
+                <Text style={styles.pointsLabel}>PUNTOS</Text>
+              </View>
+              <View style={styles.userProfile}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{getInitials(userData.nombre)}</Text>
+                </View>
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>{userData.nombre}</Text>
+                  <Text style={styles.userEmail}>{userData.email}</Text>
+                </View>
+              </View>
+            </View>
           </View>
-          <Text style={styles.balanceAmount}>{balance ? balance.toLocaleString() : 0}</Text>
-          <Text style={styles.balanceSubtext}>Puntos disponibles</Text>
+        )}
+
+        {/* SALUDO Y FECHA */}
+        <View style={styles.greeting}>
+          <Text style={styles.greetingText}>Hola, {userData.nombre} 👋</Text>
+          <View style={styles.dateContainer}>
+            <MaterialCommunityIcons name="calendar" size={16} color={COLORS.gray} />
+            <Text style={styles.dateText}>{getDayName()}</Text>
+          </View>
         </View>
 
-        {/* Sección de Transacciones Recientes */}
-        {transactions.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Transacciones Recientes</Text>
-              <TouchableOpacity>
-                <Text style={styles.viewAll}>Ver todo</Text>
+        {/* CONTENEDOR PRINCIPAL (BALANCE + STATS) */}
+        <View style={styles.mainContent}>
+          {/* TARJETA DE BALANCE */}
+          <View style={styles.balanceCard}>
+            <View style={styles.balanceTop}>
+              <View>
+                <Text style={styles.balanceLabel}>BALANCE DISPONIBLE</Text>
+                <Text style={styles.balanceAmount}>{balance.toLocaleString()}</Text>
+                <Text style={styles.balanceUnit}>Puntos</Text>
+              </View>
+              <MaterialCommunityIcons name="wallet" size={80} color="#E8F5E9" />
+            </View>
+            <View style={styles.balanceActions}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.primaryBtn]}
+                onPress={() => navigation.navigate('Earn')}
+              >
+                <MaterialCommunityIcons name="plus" size={18} color={COLORS.white} />
+                <Text style={styles.primaryBtnText}>Canjear</Text>
               </TouchableOpacity>
             </View>
-
-            {transactions.map((transaction) => (
-              <View key={transaction.id} style={styles.transactionItem}>
-                <View style={styles.transactionInfo}>
-                  <Text style={styles.transactionDescription}>{transaction.description}</Text>
-                  <Text style={styles.transactionDate}>
-                    {new Date(transaction.timestamp).toLocaleDateString('es-ES')}
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    styles.transactionAmount,
-                    transaction.type === 'earned'
-                      ? styles.earnedAmount
-                      : styles.redeemedAmount,
-                  ]}
-                >
-                  {transaction.type === 'earned' ? '+' : '-'}{transaction.amount}
-                </Text>
-              </View>
-            ))}
           </View>
-        )}
 
-        {/* Sección de Beneficios Disponibles */}
-        {benefits.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Beneficios Disponibles</Text>
+          {/* PANEL DERECHO (STATS + ACTIVIDAD) */}
+          <View style={styles.sidePanel}>
+            {/* PUNTOS ESTE MES */}
+            <View style={styles.statCard}>
+              <View style={styles.statHeader}>
+                <Text style={styles.statTitle}>PUNTOS ESTE MES</Text>
+                <MaterialCommunityIcons name="trending-up" size={20} color={COLORS.success} />
+              </View>
+              <Text style={styles.statNumber}>+{monthlyPoints}</Text>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${(monthlyPoints / monthlyGoal) * 100}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressText}>
+                Progreso <Text style={styles.progressHighlight}>Meta: {monthlyGoal}</Text>
+              </Text>
+            </View>
 
-            {benefits.slice(0, 3).map((benefit) => (
-              <View key={benefit.id} style={styles.benefitCard}>
-                <View style={styles.benefitHeader}>
-                  <View>
-                    <Text style={styles.benefitName}>{benefit.name}</Text>
-                    <Text style={styles.benefitCategory}>{benefit.category}</Text>
-                  </View>
-                  <View style={styles.pointsCostBadge}>
-                    <Text style={styles.pointsCostText}>{benefit.pointsCost}</Text>
-                    <Text style={styles.pointsLabel}>pts</Text>
-                  </View>
-                </View>
-                <Text style={styles.benefitDescription}>{benefit.description}</Text>
-                <TouchableOpacity
-                  style={styles.benefitButton}
-                  onPress={() => handleRedeemBenefit(benefit.id, benefit.pointsCost)}
-                >
-                  <Text style={styles.benefitButtonText}>Canjear Ahora</Text>
+            {/* ACTIVIDAD RECIENTE */}
+            <View style={styles.activityCard}>
+              <View style={styles.activityHeader}>
+                <Text style={styles.activityTitle}>Actividad Reciente</Text>
+                <TouchableOpacity>
+                  <Text style={styles.seeAllLink}>VER TODO</Text>
                 </TouchableOpacity>
               </View>
-            ))}
-
-            <TouchableOpacity
-              style={styles.viewAllButton}
-              onPress={() => navigation.navigate('Beneficios')}
-            >
-              <Text style={styles.viewAllButtonText}>Ver todos los beneficios</Text>
-            </TouchableOpacity>
+              <View style={styles.activitiesList}>
+                {activities.map((activity) => (
+                  <View key={activity.id} style={styles.activityItem}>
+                    <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                      <MaterialCommunityIcons
+                        name={activity.icon}
+                        size={18}
+                        color={activity.color}
+                      />
+                    </View>
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityItemTitle}>{activity.title}</Text>
+                      <Text style={styles.activityDesc}>{activity.description}</Text>
+                      <Text style={styles.activityTime}>{activity.time}</Text>
+                    </View>
+                    <Text style={[styles.activityPoints, { color: activity.color }]}>
+                      {activity.points}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
           </View>
-        )}
+        </View>
 
-        {/* Mensaje de Error */}
-        {error && (
-          <View style={styles.errorBox}>
-            <MaterialCommunityIcons name="alert-circle" size={24} color="#f44336" />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadData}>
-              <Text style={styles.retryButtonText}>Reintentar</Text>
-            </TouchableOpacity>
+        {/* SECCIÓN GANA MÁS PUNTOS HOY */}
+        <View style={styles.earnSection}>
+          <View style={styles.earnHeader}>
+            <MaterialCommunityIcons name="lightning-bolt" size={20} color={COLORS.primary} />
+            <Text style={styles.earnTitle}>Gana Más Puntos Hoy</Text>
           </View>
-        )}
-
-        {/* Botón de Logout */}
-        <View style={styles.logoutSection}>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.earnScroll}
           >
+            {earnOptions.map((option) => (
+              <TouchableOpacity
+                key={option.id}
+                style={styles.earnCard}
+                onPress={() => navigation.navigate('Earn')}
+              >
+                <View style={styles.earnIconContainer}>
+                  <MaterialCommunityIcons
+                    name={option.icon}
+                    size={32}
+                    color={COLORS.primary}
+                  />
+                </View>
+                <Text style={styles.earnCardTitle}>{option.title}</Text>
+                <Text style={styles.earnCardDesc}>{option.description}</Text>
+                <View style={styles.earnCardFooter}>
+                  <Text style={styles.earnCardPoints}>{option.points}</Text>
+                  <MaterialCommunityIcons name="arrow-right" size={18} color={COLORS.primary} />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* BENEFICIOS DISPONIBLES */}
+        {benefits.length > 0 && (
+          <View style={styles.benefitsSection}>
+            <Text style={styles.sectionTitle}>Beneficios Disponibles</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.benefitsScroll}
+            >
+              {benefits.map((benefit) => (
+                <TouchableOpacity
+                  key={benefit.id}
+                  style={styles.benefitCard}
+                  onPress={() => {
+                    if (benefit.redeemable) {
+                      handleRedeemBenefit(benefit.id, benefit.pointsCost);
+                    }
+                  }}
+                  disabled={!benefit.redeemable}
+                >
+                  <View style={styles.benefitIcon}>
+                    <MaterialCommunityIcons name="gift" size={24} color={COLORS.primary} />
+                  </View>
+                  <Text style={styles.benefitName}>{benefit.name}</Text>
+                  <Text style={styles.benefitDesc}>{benefit.description}</Text>
+                  <View style={styles.benefitFooter}>
+                    <Text style={styles.benefitCost}>{benefit.pointsCost} pts</Text>
+                    {benefit.redeemable && (
+                      <TouchableOpacity
+                        style={styles.redeemBtn}
+                        onPress={() => handleRedeemBenefit(benefit.id, benefit.pointsCost)}
+                      >
+                        <Text style={styles.redeemBtnText}>Canjear</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* BOTÓN CERRAR SESIÓN */}
+        <View style={styles.logoutSection}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <MaterialCommunityIcons name="logout" size={20} color={COLORS.white} />
             <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
           </TouchableOpacity>
@@ -227,9 +425,28 @@ export default function UserHomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEFEF',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   scrollContent: {
-    flexGrow: 1,
-    paddingVertical: SPACING.lg,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: Platform.OS === 'web' ? SPACING.sm : SPACING.md,
+    paddingTop: Platform.OS === 'web' ? 100 : SPACING.lg,
+    minHeight: '100vh',
   },
   centerContainer: {
     flex: 1,
@@ -241,191 +458,390 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontSize: TYPOGRAPHY.body2,
   },
-  balanceCard: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    padding: SPACING.lg,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  balanceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  balanceLabel: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.body1,
-    fontWeight: '600',
-    marginLeft: SPACING.md,
-  },
-  balanceAmount: {
-    color: COLORS.white,
-    fontSize: 36,
-    fontWeight: 'bold',
-    marginBottom: SPACING.sm,
-  },
-  balanceSubtext: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: TYPOGRAPHY.body2,
-  },
-  section: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  sectionTitle: {
-    fontSize: TYPOGRAPHY.h5,
-    fontWeight: '700',
-    color: COLORS.dark,
-  },
-  viewAll: {
-    color: COLORS.primary,
-    fontSize: TYPOGRAPHY.body2,
-    fontWeight: '600',
-  },
-  transactionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.light,
-  },
-  transactionInfo: {
-    flex: 1,
-  },
-  transactionDescription: {
-    color: COLORS.dark,
-    fontSize: TYPOGRAPHY.body1,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  transactionDate: {
-    color: COLORS.gray,
-    fontSize: TYPOGRAPHY.caption,
-  },
-  transactionAmount: {
-    fontWeight: 'bold',
-    fontSize: TYPOGRAPHY.body1,
-  },
-  earnedAmount: {
-    color: '#4CAF50',
-  },
-  redeemedAmount: {
-    color: '#f44336',
-  },
-  benefitCard: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.light,
-    borderRadius: 8,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  benefitHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: SPACING.lg,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: COLORS.dark,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+    gap: SPACING.md,
+  },
+  pointsBadge: {
+    backgroundColor: '#FFF8E1',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pointsText: {
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#FFB84D',
+  },
+  pointsLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFB84D',
+  },
+  userProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: COLORS.white,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  userInfo: {
+    alignItems: 'flex-end',
+  },
+  userName: {
+    fontWeight: '600',
+    fontSize: 12,
+    color: COLORS.dark,
+  },
+  userEmail: {
+    fontSize: 10,
+    color: COLORS.gray,
+  },
+  greeting: {
+    marginBottom: SPACING.lg,
+  },
+  greetingText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: SPACING.sm,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dateText: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  mainContent: {
+    marginBottom: SPACING.xl,
+    gap: SPACING.md,
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    flex: Platform.OS === 'web' ? 1 : undefined,
+  },
+  balanceCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.light,
+    padding: SPACING.lg,
+    marginBottom: Platform.OS === 'web' ? 0 : SPACING.lg,
+    flex: Platform.OS === 'web' ? 1.5 : undefined,
+  },
+  balanceTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  balanceLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.primary,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  balanceAmount: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: COLORS.dark,
+    lineHeight: 50,
+  },
+  balanceUnit: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginTop: 4,
+  },
+  balanceActions: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  actionBtn: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+  },
+  primaryBtn: {
+    backgroundColor: COLORS.success,
+  },
+  primaryBtnText: {
+    color: COLORS.white,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  sidePanel: {
+    gap: SPACING.lg,
+    flex: Platform.OS === 'web' ? 1 : undefined,
+  },
+  statCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.light,
+    padding: SPACING.lg,
+  },
+  statHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  statTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.gray,
+    letterSpacing: 1,
+  },
+  statNumber: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: COLORS.success,
+    marginBottom: SPACING.md,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    marginBottom: SPACING.md,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: COLORS.success,
+  },
+  progressText: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  progressHighlight: {
+    fontWeight: '700',
+    color: COLORS.dark,
+  },
+  activityCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.light,
+    padding: SPACING.lg,
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  activityTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.dark,
+  },
+  seeAllLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  activitiesList: {
+    gap: SPACING.md,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.md,
+  },
+  activityIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityItemTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.dark,
+  },
+  activityDesc: {
+    fontSize: 11,
+    color: COLORS.gray,
+    marginTop: 2,
+  },
+  activityTime: {
+    fontSize: 10,
+    color: COLORS.gray,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  activityPoints: {
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  earnSection: {
+    marginBottom: SPACING.xl,
+  },
+  earnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.lg,
+  },
+  earnTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.dark,
+  },
+  earnScroll: {
+    paddingRight: SPACING.md,
+    gap: SPACING.md,
+  },
+  earnCard: {
+    width: 140,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.light,
+    padding: SPACING.md,
+    alignItems: 'center',
+  },
+  earnIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: '#F0F7FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  earnCardTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.dark,
+    textAlign: 'center',
+    marginBottom: SPACING.xs,
+  },
+  earnCardDesc: {
+    fontSize: 10,
+    color: COLORS.gray,
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+    lineHeight: 14,
+  },
+  earnCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  earnCardPoints: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.success,
+  },
+  benefitsSection: {
+    marginBottom: SPACING.xl,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: SPACING.lg,
+  },
+  benefitsScroll: {
+    paddingRight: SPACING.md,
+    gap: SPACING.md,
+  },
+  benefitCard: {
+    width: 160,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.light,
+    padding: SPACING.md,
+  },
+  benefitIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#F0F7FF',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: SPACING.sm,
   },
   benefitName: {
-    color: COLORS.dark,
-    fontSize: TYPOGRAPHY.h6,
+    fontSize: 12,
     fontWeight: '700',
-    marginBottom: 4,
+    color: COLORS.dark,
+    marginBottom: SPACING.xs,
   },
-  benefitCategory: {
-    color: COLORS.gray,
-    fontSize: TYPOGRAPHY.caption,
-  },
-  pointsCostBadge: {
-    backgroundColor: '#FFF3E0',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 6,
-  },
-  pointsCostText: {
-    color: '#FF9800',
-    fontWeight: 'bold',
-    fontSize: TYPOGRAPHY.body1,
-  },
-  pointsLabel: {
-    color: '#FF9800',
+  benefitDesc: {
     fontSize: 10,
-  },
-  benefitDescription: {
     color: COLORS.gray,
-    fontSize: TYPOGRAPHY.body2,
     marginBottom: SPACING.md,
+    lineHeight: 13,
   },
-  benefitButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.sm,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  benefitButtonText: {
-    color: COLORS.white,
-    fontWeight: '600',
-    fontSize: TYPOGRAPHY.body2,
-  },
-  viewAllButton: {
-    backgroundColor: COLORS.light,
-    paddingVertical: SPACING.md,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: SPACING.md,
-  },
-  viewAllButtonText: {
-    color: COLORS.primary,
-    fontWeight: '600',
-    fontSize: TYPOGRAPHY.body1,
-  },
-  errorBox: {
-    backgroundColor: '#FFEBEE',
-    borderLeftWidth: 4,
-    borderLeftColor: '#f44336',
-    padding: SPACING.md,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.lg,
-    borderRadius: 6,
+  benefitFooter: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  errorText: {
-    color: '#f44336',
-    marginLeft: SPACING.md,
-    flex: 1,
-    fontSize: TYPOGRAPHY.body2,
+  benefitCost: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
-  retryButton: {
-    backgroundColor: '#f44336',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+  redeemBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
     borderRadius: 4,
   },
-  retryButtonText: {
+  redeemBtnText: {
     color: COLORS.white,
+    fontSize: 9,
     fontWeight: '600',
-    fontSize: 12,
   },
   logoutSection: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.xl,
+    marginVertical: SPACING.xl,
   },
   logoutButton: {
     backgroundColor: '#f44336',
     paddingVertical: SPACING.md,
     borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
     gap: SPACING.sm,
   },
   logoutButtonText: {

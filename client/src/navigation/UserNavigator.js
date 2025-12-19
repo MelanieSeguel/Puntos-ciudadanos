@@ -13,6 +13,7 @@ import UserHomeScreen from '../screens/user/UserHomeScreen';
 import BenefitsScreen from '../screens/user/BenefitsScreen';
 import EarnScreen from '../screens/user/EarnScreen';
 import ProfileScreen from '../screens/user/ProfileScreen';
+import HistorialScreen from '../screens/user/HistorialScreen';
 import { COLORS, SPACING } from '../theme/theme';
 
 const Tab = createBottomTabNavigator();
@@ -23,17 +24,22 @@ const isWeb = Platform.OS === 'web';
 // ============================================================================
 function WebSidebar({ activeTab, onNavigate }) {
   const tabs = [
-    { id: 'Home', label: 'Inicio', icon: 'home' },
-    { id: 'Benefits', label: 'Beneficios', icon: 'gift' },
+    { id: 'Home', label: 'Tus estadísticas', icon: 'home' },
     { id: 'Earn', label: 'Gana Puntos', icon: 'star' },
-    { id: 'Profile', label: 'Perfil', icon: 'cog' },
+    { id: 'Benefits', label: 'Beneficios', icon: 'gift' },
+    { id: 'Historial', label: 'Historial', icon: 'history' },
+    { id: 'Profile', label: 'Configuración', icon: 'cog' },
   ];
 
   return (
     <View style={styles.webSidebar}>
-      <View style={styles.sidebarHeader}>
-        <MaterialCommunityIcons name="wallet-plus" size={32} color={COLORS.white} />
-        <Text style={styles.sidebarTitle}>Mis Puntos</Text>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <MaterialCommunityIcons name="leaf" size={28} color={COLORS.white} />
+        <View>
+          <Text style={styles.logoMain}>Puntos</Text>
+          <Text style={styles.logoSub}>Ciudadanos</Text>
+        </View>
       </View>
 
       <ScrollView style={styles.sidebarNav}>
@@ -88,6 +94,8 @@ function WebLayout() {
         return <BenefitsScreen />;
       case 'Earn':
         return <EarnScreen />;
+      case 'Historial':
+        return <HistorialScreen />;
       case 'Profile':
         return <ProfileScreen />;
       default:
@@ -199,11 +207,31 @@ const styles = StyleSheet.create({
   },
   webSidebar: {
     width: '20%',
-    backgroundColor: '#1a1f36', // Color oscuro del mockup
+    backgroundColor: '#1a1f36',
     flexDirection: 'column',
     borderRightWidth: 1,
     borderRightColor: '#2a2f46',
-    paddingTop: 20,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2f46',
+  },
+  logoMain: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  logoSub: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 14,
   },
   sidebarHeader: {
     paddingHorizontal: 20,
@@ -220,15 +248,15 @@ const styles = StyleSheet.create({
   },
   sidebarNav: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   sidebarItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    marginHorizontal: 12,
-    marginVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 8,
+    marginVertical: 4,
     borderRadius: 8,
   },
   sidebarItemActive: {
@@ -247,17 +275,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sidebarFooter: {
-    paddingHorizontal: 12,
-    paddingBottom: 20,
+    paddingHorizontal: 8,
+    paddingBottom: 16,
     borderTopWidth: 1,
     borderTopColor: '#2a2f46',
-    paddingTop: 12,
+    paddingTop: 8,
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 8,
     backgroundColor: 'rgba(255, 71, 87, 0.1)',
   },
