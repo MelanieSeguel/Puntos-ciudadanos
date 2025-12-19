@@ -149,13 +149,6 @@ export default function UserHomeScreen({ navigation }) {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo cerrar sesión');
-    }
-  };
 
   if (loading) {
     return (
@@ -393,14 +386,6 @@ export default function UserHomeScreen({ navigation }) {
             </ScrollView>
           </View>
         )}
-
-        {/* BOTÓN CERRAR SESIÓN */}
-        <View style={styles.logoutSection}>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <MaterialCommunityIcons name="logout" size={20} color={COLORS.white} />
-            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </ScreenWrapper>
   );
