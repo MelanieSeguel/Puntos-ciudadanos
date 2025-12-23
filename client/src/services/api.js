@@ -1,7 +1,26 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.82:3000/api/v1';
+// Cambiar según tu entorno:
+// Para desarrollo local web: http://localhost:3000/api/v1
+// Para dispositivo físico: http://[TU_IP_LOCAL]:3000/api/v1
+// Ejemplo: http://192.168.1.100:3000/api/v1
+const API_URL = 'http://localhost:3000/api/v1';
+
+// Helper para obtener el token (compatible con navegador y React Native)
+const getToken = async () => {
+  try {
+    // Intentar AsyncStorage primero (React Native)
+    if (AsyncStorage?.getItem) {
+      return await AsyncStorage.getItem('userToken');
+    }
+    // Fallback a localStorage (Navegador web)
+    return typeof window !== 'undefined' ? window.localStorage.getItem('userToken') : null;
+  } catch (error) {
+    console.error('Error al obtener token:', error);
+    return null;
+  }
+};
 
 const api = axios.create({
   baseURL: API_URL,
@@ -15,12 +34,15 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await getToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('[API] Token añadido al header');
+      } else {
+        console.log('[API] No hay token disponible');
       }
     } catch (error) {
-      console.error('Error al obtener token:', error);
+      console.error('[API] Error al obtener token:', error);
     }
     return config;
   },
@@ -34,8 +56,19 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
+      console.warn('[API] 401 Unauthorized - Token inválido o expirado');
       // Token inválido o expirado
-      await AsyncStorage.multiRemove(['userToken', 'userData', 'userRole']);
+      try {
+        if (AsyncStorage?.multiRemove) {
+          await AsyncStorage.multiRemove(['userToken', 'userData', 'userRole']);
+        } else if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('userToken');
+          window.localStorage.removeItem('userData');
+          window.localStorage.removeItem('userRole');
+        }
+      } catch (err) {
+        console.error('Error al limpiar storage:', err);
+      }
     }
     return Promise.reject(error);
   }

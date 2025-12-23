@@ -139,7 +139,7 @@ export default function MerchantDashboardScreen({ navigation }) {
             {/* Header */}
             <View style={styles.header}>
               <View>
-                <Text style={styles.headerGreeting}>Hola, {user?.nombre}</Text>
+                <Text style={styles.headerGreeting}>Hola, {user?.name}</Text>
                 <Text style={styles.headerSubtitle}>Comercio - {user?.email}</Text>
               </View>
               <TouchableOpacity

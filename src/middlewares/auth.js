@@ -23,6 +23,7 @@ export const authenticate = async (req, res, next) => {
       where: { id: decoded.id },
       select: {
         id: true,
+        name: true,
         email: true,
         role: true,
         status: true,
@@ -59,6 +60,7 @@ export const optionalAuth = async (req, res, next) => {
         where: { id: decoded.id },
         select: {
           id: true,
+          name: true,
           email: true,
           role: true,
           status: true,

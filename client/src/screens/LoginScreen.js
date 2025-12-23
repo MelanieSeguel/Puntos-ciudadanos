@@ -15,7 +15,7 @@ import { AuthContext } from '../context/AuthContext';
 import * as validators from '../utils/validators';
 import { getErrorMessage } from '../utils/errorHandler';
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -138,6 +138,16 @@ export default function LoginScreen() {
                 <Text style={styles.buttonText}>Iniciar Sesión</Text>
               )}
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.registerLink}
+              onPress={() => navigation.navigate('Register')}
+              disabled={loading}
+            >
+              <Text style={styles.registerText}>
+                ¿No tienes cuenta? <Text style={styles.registerBold}>Regístrate aquí</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.footer}>
@@ -230,6 +240,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  registerLink: {
+    marginTop: 20,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  registerText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  registerBold: {
+    fontWeight: 'bold',
+    color: '#2E7D32',
   },
   footer: {
     marginTop: 40,

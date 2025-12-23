@@ -63,20 +63,14 @@ model User {
   role              UserRole         @default(USER)
   status            UserStatus       @default(ACTIVE)
   
-  // Verificación de cuenta (para admins)
-  emailVerified     Boolean          @default(false) @map("email_verified")
-  verificationToken String?          @map("verification_token") @db.VarChar(500)
-  passwordChanged   Boolean          @default(false) @map("password_changed")
-  
-  // Para comerciantes (normalizacion 3NF)
-  merchantProfile   MerchantProfile? // Datos específicos de comerciante
-  
   // Timestamps
+  fechaRegistro     DateTime         @default(now()) @map("fecha_registro") @db.Timestamptz(3)
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
   
   // Relaciones
   wallet            Wallet?          // Billetera: relación 1:1
+  merchantProfile   MerchantProfile? // Perfil de comerciante (si es comerciante)
   missionSubmissions MissionSubmission[] // Misiones enviadas por el usuario
   validatedSubmissions MissionSubmission[] @relation("AdminValidations") // Aprobaciones hechas por este admin
   adminLogs         AdminLog[]       // Decisiones administrativas que ha tomado
@@ -92,7 +86,7 @@ model User {
 model Wallet {
   id           String               @id @default(uuid())
   userId       String               @unique @map("user_id")
-  balance      Int                  @default(0) @map("balance")
+  balance      Int                  @default(0)
   version      Int                  @default(0) // Optimistic Concurrency Control
   
   // Timestamps
@@ -137,13 +131,13 @@ model PointTransaction {
 model Benefit {
   id               String             @id @default(uuid())
   merchantId       String             @map("merchant_id")
-  title            String             @db.VarChar(255)
-  description      String?            @db.Text
-  pointsCost       Int                @map("points_cost")
+  title            String             @map("titulo") @db.VarChar(255)
+  description      String?            @map("descripcion") @db.Text
+  pointsCost       Int                @map("costo_puntos")
   stock            Int                @default(0)
-  imageUrl         String?            @map("image_url") @db.VarChar(500)
-  active           Boolean            @default(true)
-  category         String?            @db.VarChar(100) // Ej: "Descuentos", "Productos", "Servicios"
+  imageUrl         String?            @map("imagen_url") @db.VarChar(500)
+  active           Boolean            @default(true) @map("activo")
+  category         String?            @map("categoria") @db.VarChar(100) // Ej: "Descuentos", "Productos", "Servicios"
   cooldownDays     Int                @default(0) @map("cooldown_days") // Días de espera para re-canje
   version          Int                @default(0) // Optimistic Concurrency Control para stock
   

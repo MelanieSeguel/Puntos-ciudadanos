@@ -6,8 +6,8 @@ export default function HomeScreen() {
   const { authState, logout } = useContext(AuthContext);
   const { user, role } = authState;
 
-  const getRoleBadgeColor = (rol) => {
-    switch (rol) {
+  const getRoleBadgeColor = (role) => {
+    switch (role) {
       case 'USER':
         return '#2196F3';
       case 'MERCHANT':
@@ -19,8 +19,8 @@ export default function HomeScreen() {
     }
   };
 
-  const getRoleLabel = (rol) => {
-    switch (rol) {
+  const getRoleLabel = (role) => {
+    switch (role) {
       case 'USER':
         return 'Usuario';
       case 'MERCHANT':
@@ -36,7 +36,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.welcomeText}>Bienvenido</Text>
-        <Text style={styles.nameText}>{user?.nombre}</Text>
+        <Text style={styles.nameText}>{user?.name}</Text>
 
         <View style={[styles.roleBadge, { backgroundColor: getRoleBadgeColor(role) }]}>
           <Text style={styles.roleText}>Rol: {getRoleLabel(role)}</Text>

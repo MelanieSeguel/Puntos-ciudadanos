@@ -22,7 +22,14 @@ const { width } = Dimensions.get('window');
 
 export default function UserHomeScreen({ navigation }) {
   const { authState, logout } = useContext(AuthContext);
-  const [userData, setUserData] = useState({ nombre: 'Usuario', email: '' });
+  
+  console.log('[UserHomeScreen] Mount/Render: authState=', {
+    authenticated: authState.authenticated,
+    hasToken: !!authState.token,
+    user: authState.user,
+  });
+
+  const [userData, setUserData] = useState({ name: 'Usuario', email: '' });
   const [balance, setBalance] = useState(0);
   const [monthlyPoints, setMonthlyPoints] = useState(350);
   const [monthlyGoal] = useState(500);
@@ -84,44 +91,80 @@ export default function UserHomeScreen({ navigation }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    console.log('[UserHomeScreen] useEffect: auth changed', { authenticated: authState.authenticated, hasToken: !!authState.token });
+    
+    // Solo cargar datos si el usuario está autenticado
+    if (authState.authenticated && authState.token) {
+      console.log('[UserHomeScreen] Calling loadData()');
+      loadData();
+    } else {
+      console.log('[UserHomeScreen] Usuario no autenticado');
+      setUserData({ name: 'Usuario no autenticado', email: '' });
+      setError('Por favor inicia sesión para ver tus datos');
+    }
+  }, [authState.authenticated, authState.token]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      // Verificar autenticación
+      if (!authState.authenticated || !authState.token) {
+        setError('No autenticado. Por favor inicia sesión.');
+        return;
+      }
+
+      console.log('[UserHomeScreen] Cargando datos con token:', authState.token.substring(0, 20) + '...');
+
       const [userRes, benefitsRes] = await Promise.all([
         walletAPI.getBalance(),
         benefitsAPI.getAll(),
       ]);
 
+      console.log('[UserHomeScreen] Response completo de user:', JSON.stringify(userRes, null, 2));
+      console.log('[UserHomeScreen] Response estructura:', {
+        userRes: userRes?.data,
+        benefitsCount: benefitsRes?.data?.data?.length
+      });
+
       // Extraer datos del usuario
       const user = userRes.data?.data;
+      console.log('[UserHomeScreen] Usuario objeto completo:', JSON.stringify(user, null, 2));
+      
       if (user) {
+        console.log('[UserHomeScreen] Usuario cargado:', user.name);
         setUserData({
-          nombre: user.nombre || 'Usuario',
+          name: user.name || 'Usuario',
           email: user.email || '',
         });
-        setBalance(user.wallet?.saldoActual || 0);
+        setBalance(user.wallet?.balance || 0);
+      } else {
+        console.warn('[UserHomeScreen] Usuario es null/undefined, response:', userRes?.data);
       }
 
       // Extraer beneficios
       const beneficisList = (benefitsRes.data?.data || []).map(b => ({
         id: b.id,
-        name: b.titulo,
-        description: b.descripcion,
-        pointsCost: b.costoPuntos,
+        name: b.title,
+        description: b.description,
+        pointsCost: b.pointsCost,
         stock: b.stock,
         redeemable: b.stock > 0,
       }));
       setBenefits(beneficisList);
+      console.log('[UserHomeScreen] ' + beneficisList.length + ' beneficios cargados');
 
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
-      console.error('Error al cargar datos:', err);
+      console.error('[UserHomeScreen] Error al cargar datos:', err.response?.status, err.message);
+      
+      // Si es 401, el token es inválido
+      if (err.response?.status === 401) {
+        console.warn('[UserHomeScreen] Token inválido, desconectando usuario');
+        await logout();
+      }
     } finally {
       setLoading(false);
     }
@@ -186,10 +229,10 @@ export default function UserHomeScreen({ navigation }) {
               </View>
               <View style={styles.userProfile}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{getInitials(userData.nombre)}</Text>
+                  <Text style={styles.avatarText}>{getInitials(userData.name)}</Text>
                 </View>
                 <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{userData.nombre}</Text>
+                  <Text style={styles.userName}>{userData.name}</Text>
                   <Text style={styles.userEmail}>{userData.email}</Text>
                 </View>
               </View>
@@ -216,10 +259,10 @@ export default function UserHomeScreen({ navigation }) {
               </View>
               <View style={styles.userProfile}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{getInitials(userData.nombre)}</Text>
+                  <Text style={styles.avatarText}>{getInitials(userData.name)}</Text>
                 </View>
                 <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{userData.nombre}</Text>
+                  <Text style={styles.userName}>{userData.name}</Text>
                   <Text style={styles.userEmail}>{userData.email}</Text>
                 </View>
               </View>
@@ -229,7 +272,7 @@ export default function UserHomeScreen({ navigation }) {
 
         {/* SALUDO */}
         <View style={styles.greeting}>
-          <Text style={styles.greetingText}>Hola, {userData.nombre} 👋</Text>
+          <Text style={styles.greetingText}>Hola, {userData.name} 👋</Text>
         </View>
 
         {/* CONTENEDOR PRINCIPAL (BALANCE + STATS) */}
