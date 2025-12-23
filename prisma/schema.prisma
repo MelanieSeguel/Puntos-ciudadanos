@@ -15,9 +15,10 @@ datasource db {
 // ============================================
 
 enum UserRole {
-  USER
-  ADMIN
-  MERCHANT
+  MASTER_ADMIN   // Acceso total al sistema
+  SUPPORT_ADMIN  // Apoyo administrativo, aprobaciones
+  MERCHANT       // Comerciante, escanea QR y cobra puntos
+  USER           // Usuario ciudadano
 }
 
 enum UserStatus {
@@ -33,31 +34,57 @@ enum TransactionType {
   REFUND   // Devolución de puntos
 }
 
+enum SubmissionStatus {
+  PENDING   // Esperando aprobación
+  APPROVED  // Aprobada y puntos acreditados
+  REJECTED  // Rechazada
+}
+
+enum FrequencyType {
+  ONCE            // Única vez en toda la historia
+  DAILY           // Se puede completar una vez al día
+  WEEKLY          // Se puede completar una vez a la semana
+  MONTHLY         // Se puede completar una vez al mes
+  QUARTERLY       // Se puede completar una vez cada trimestre (3 meses)
+  YEARLY          // Se puede completar una vez al año
+  ELECTION_PERIOD // Válida solo durante periodos electorales
+}
+
 // ============================================
 // MODELS
 // ============================================
 
-/// Usuarios del sistema (ciudadanos y administradores)
+/// Usuarios del sistema (ciudadanos, comerciantes y administradores)
 model User {
-  id            String      @id @default(uuid())
-  nombre        String      @db.VarChar(255)
-  email         String      @unique @db.VarChar(255)
-  passwordHash  String      @map("password_hash") @db.VarChar(255)
-  rol           UserRole    @default(USER)
-  estado        UserStatus  @default(ACTIVE)
-  fechaRegistro DateTime    @default(now()) @map("fecha_registro") @db.Timestamptz(3)
+  id                String           @id @default(uuid())
+  name              String           @db.VarChar(255)
+  email             String           @unique @db.VarChar(255)
+  passwordHash      String           @map("password_hash") @db.VarChar(255)
+  role              UserRole         @default(USER)
+  status            UserStatus       @default(ACTIVE)
+  
+  // Verificación de cuenta (para admins)
+  emailVerified     Boolean          @default(false) @map("email_verified")
+  verificationToken String?          @map("verification_token") @db.VarChar(500)
+  passwordChanged   Boolean          @default(false) @map("password_changed")
+  
+  // Para comerciantes (normalizacion 3NF)
+  merchantProfile   MerchantProfile? // Datos específicos de comerciante
   
   // Timestamps
-  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
   
   // Relaciones
-  wallet        Wallet?     // Relación 1:1 con Wallet
-  news          News[]      // Noticias publicadas (si es admin)
+  wallet            Wallet?          // Billetera: relación 1:1
+  missionSubmissions MissionSubmission[] // Misiones enviadas por el usuario
+  validatedSubmissions MissionSubmission[] @relation("AdminValidations") // Aprobaciones hechas por este admin
+  adminLogs         AdminLog[]       // Decisiones administrativas que ha tomado
+  benefitsOwned     Benefit[]        // Beneficios que posee como comerciante
   
   @@index([email])
-  @@index([rol])
-  @@index([estado])
+  @@index([role])
+  @@index([status])
   @@map("users")
 }
 
@@ -65,7 +92,7 @@ model User {
 model Wallet {
   id           String               @id @default(uuid())
   userId       String               @unique @map("user_id")
-  saldoActual  Int                  @default(0) @map("saldo_actual")
+  balance      Int                  @default(0) @map("balance")
   version      Int                  @default(0) // Optimistic Concurrency Control
   
   // Timestamps
@@ -84,11 +111,10 @@ model Wallet {
 model PointTransaction {
   id           String          @id @default(uuid())
   walletId     String          @map("wallet_id")
-  tipo         TransactionType
-  monto        Int             // Cantidad de puntos (siempre positivo)
-  descripcion  String          @db.Text
+  type         TransactionType
+  amount       Int             // Cantidad de puntos (siempre positivo)
+  description  String          @db.Text
   benefitId    String?         @map("benefit_id") // Referencia al beneficio canjeado (opcional)
-  fecha        DateTime        @default(now()) @db.Timestamptz(3)
   
   // Metadata adicional
   metadata     Json?           // Campo flexible para datos adicionales
@@ -101,22 +127,24 @@ model PointTransaction {
   benefit      Benefit?        @relation(fields: [benefitId], references: [id], onDelete: SetNull)
   
   @@index([walletId])
-  @@index([tipo])
-  @@index([fecha])
+  @@index([type])
+  @@index([createdAt])
   @@index([benefitId])
   @@map("point_transactions")
 }
 
-/// Catálogo de beneficios canjeables
+/// Catálogo de beneficios canjeables (Normalización 3NF: pertenece a un comercio)
 model Benefit {
   id               String             @id @default(uuid())
-  titulo           String             @db.VarChar(255)
-  descripcion      String?            @db.Text
-  costoPuntos      Int                @map("costo_puntos")
+  merchantId       String             @map("merchant_id")
+  title            String             @db.VarChar(255)
+  description      String?            @db.Text
+  pointsCost       Int                @map("points_cost")
   stock            Int                @default(0)
-  imagenUrl        String?            @map("imagen_url") @db.VarChar(500)
-  activo           Boolean            @default(true)
-  categoria        String?            @db.VarChar(100) // Ej: "Descuentos", "Productos", "Servicios"
+  imageUrl         String?            @map("image_url") @db.VarChar(500)
+  active           Boolean            @default(true)
+  category         String?            @db.VarChar(100) // Ej: "Descuentos", "Productos", "Servicios"
+  cooldownDays     Int                @default(0) @map("cooldown_days") // Días de espera para re-canje
   version          Int                @default(0) // Optimistic Concurrency Control para stock
   
   // Timestamps
@@ -124,32 +152,101 @@ model Benefit {
   updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
   
   // Relaciones
+  merchant         User               @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   transactions     PointTransaction[] // Transacciones que usaron este beneficio
   
-  @@index([activo])
-  @@index([costoPuntos])
+  @@index([merchantId])
+  @@index([active])
+  @@index([pointsCost])
   @@map("benefits")
 }
 
-/// Noticias y comunicados publicados por administradores
-model News {
-  id           String    @id @default(uuid())
-  titulo       String    @db.VarChar(255)
-  cuerpo       String    @db.Text
-  autorId      String    @map("autor_id")
-  imagenUrl    String?   @map("imagen_url") @db.VarChar(500)
-  publicada    Boolean   @default(false)
-  fecha        DateTime  @default(now()) @db.Timestamptz(3)
+/// Perfil de Comerciante (Normalización 3NF)
+model MerchantProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  storeName     String   @db.VarChar(255) @map("store_name")
+  address       String?  @db.VarChar(500)
+  phone         String?  @db.VarChar(20)
+  rut           String?  @unique @db.VarChar(20)
   
   // Timestamps
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   
   // Relaciones
-  autor        User      @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  @@index([autorId])
-  @@index([publicada])
-  @@index([fecha])
-  @@map("news")
+  @@map("merchant_profiles")
+}
+
+/// Catálogo Dinámico de Misiones (gestionable por administrador)
+model Mission {
+  id            String         @id @default(uuid())
+  name          String         @unique @db.VarChar(255)
+  description   String?        @db.Text
+  points        Int            // Valor positivo de puntos a otorgar
+  frequency     FrequencyType  // Define la lógica del cooldown
+  cooldownDays  Int            @default(0) @map("cooldown_days") // Días exactos de bloqueo tras aprobación
+  evidenceType  String         @db.VarChar(50) @map("evidence_type") // Ej: "PDF", "FOTO", "QR", "DOCUMENTO"
+  active        Boolean        @default(true)
+  
+  // Timestamps
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  submissions   MissionSubmission[]
+  
+  @@index([active])
+  @@index([frequency])
+  @@map("missions")
+}
+
+/// Bandeja de Aprobaciones y Evidencias (separación de definición vs ejecución - 3NF)
+model MissionSubmission {
+  id             String           @id @default(uuid())
+  userId         String           @map("user_id")
+  missionId      String           @map("mission_id")
+  evidenceUrl    String           @db.VarChar(500) @map("evidence_url")
+  status         SubmissionStatus @default(PENDING)
+  observation    String?          @db.Text // Motivos de rechazo u observaciones
+  validatedById  String?          @map("validated_by_id") // ID del Admin que aprobó/rechazó
+  
+  // Timestamps
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  validatedAt    DateTime?        @map("validated_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission        Mission          @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  validatedBy    User?            @relation("AdminValidations", fields: [validatedById], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([missionId])
+  @@index([status])
+  @@index([validatedById])
+  @@map("mission_submissions")
+}
+
+/// Auditoría y Transparencia: Historial de decisiones administrativas
+model AdminLog {
+  id          String   @id @default(uuid())
+  adminId     String   @map("admin_id")
+  action      String   @db.VarChar(255) // Ej: "APPROVE_MISSION", "EDIT_POINTS", "BLOCK_USER", "CREATE_MISSION"
+  targetId    String   @db.VarChar(255) @map("target_id") // ID del elemento afectado
+  metadata    Json?    // Estado anterior y estado nuevo
+  description String?  @db.Text
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  admin       User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  
+  @@index([adminId])
+  @@index([action])
+  @@index([targetId])
+  @@index([createdAt])
+  @@map("admin_logs")
 }
