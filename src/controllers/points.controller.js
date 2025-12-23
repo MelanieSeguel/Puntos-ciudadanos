@@ -20,15 +20,15 @@ export const addPoints = asyncHandler(async (req, res) => {
   successResponse(
     res,
     {
-      saldoActual: result.wallet.saldoActual,
-      transaccion: {
+      balance: result.wallet.balance,
+      transaction: {
         id: result.transaction.id,
-        tipo: result.transaction.tipo,
-        monto: result.transaction.monto,
-        descripcion: result.transaction.descripcion,
-        saldoAnterior: result.transaction.metadata?.saldoAnterior || null,
-        saldoNuevo: result.transaction.metadata?.saldoNuevo || null,
-        fecha: result.transaction.fecha
+        type: result.transaction.type,
+        amount: result.transaction.amount,
+        description: result.transaction.description,
+        previousBalance: result.transaction.metadata?.saldoAnterior || null,
+        newBalance: result.transaction.metadata?.saldoNuevo || null,
+        createdAt: result.transaction.createdAt
       }
     },
     'Puntos agregados exitosamente',
@@ -84,15 +84,15 @@ export const scanQR = asyncHandler(async (req, res) => {
   successResponse(
     res,
     {
-      saldoActual: result.wallet.saldoActual,
-      transaccion: {
+      balance: result.wallet.balance,
+      transaction: {
         id: result.transaction.id,
-        tipo: result.transaction.tipo,
-        monto: result.transaction.monto,
-        descripcion: result.transaction.descripcion,
-        saldoAnterior: result.transaction.metadata?.saldoAnterior || null,
-        saldoNuevo: result.transaction.metadata?.saldoNuevo || null,
-        fecha: result.transaction.fecha
+        type: result.transaction.type,
+        amount: result.transaction.amount,
+        description: result.transaction.description,
+        previousBalance: result.transaction.metadata?.saldoAnterior || null,
+        newBalance: result.transaction.metadata?.saldoNuevo || null,
+        createdAt: result.transaction.createdAt
       }
     },
     'Puntos ganados exitosamente',
@@ -113,27 +113,27 @@ export const redeemBenefit = asyncHandler(async (req, res) => {
   successResponse(
     res,
     {
-      mensaje: 'Beneficio canjeado exitosamente',
-      saldoActual: result.wallet.saldoActual,
-      beneficio: {
+      message: 'Beneficio canjeado exitosamente',
+      balance: result.wallet.balance,
+      benefit: {
         id: result.benefit.id,
-        nombre: result.benefit.titulo,
-        puntosCanjeados: result.benefit.costoPuntos,
-        stockRestante: result.benefit.stock
+        name: result.benefit.title,
+        pointsCost: result.benefit.pointsCost,
+        remainingStock: result.benefit.stock
       },
-      transaccion: {
+      transaction: {
         id: result.transaction.id,
-        tipo: result.transaction.tipo,
-        monto: result.transaction.monto,
-        descripcion: result.transaction.descripcion,
-        fecha: result.transaction.fecha
+        type: result.transaction.type,
+        amount: result.transaction.amount,
+        description: result.transaction.description,
+        createdAt: result.transaction.createdAt
       },
-      cupon: {
+      coupon: {
         transactionId: result.transaction.id,
         qrData: result.transaction.id,
-        estado: 'PENDIENTE',
-        instrucciones: 'Muestra este código al comercio para canjear tu beneficio',
-        validoHasta: result.transaction.metadata?.expiresAt,
+        status: 'PENDING',
+        instructions: 'Muestra este código al comercio para canjear tu beneficio',
+        expiresAt: result.transaction.metadata?.expiresAt,
       }
     },
     'Beneficio canjeado exitosamente. Muestra el QR al comercio',

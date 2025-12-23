@@ -21,7 +21,7 @@ const passwordSchema = z
 
 // Esquema para registro de usuario
 export const registerSchema = z.object({
-  nombre: z
+  name: z
     .string({ required_error: 'El nombre es requerido' })
     .min(2, 'El nombre debe tener al menos 2 caracteres')
     .max(255, 'El nombre no puede exceder 255 caracteres')
@@ -48,7 +48,7 @@ export const loginSchema = z.object({
 
 // Esquema para actualizar perfil de usuario
 export const updateProfileSchema = z.object({
-  nombre: z
+  name: z
     .string()
     .min(2, 'El nombre debe tener al menos 2 caracteres')
     .max(255, 'El nombre no puede exceder 255 caracteres')
@@ -77,19 +77,19 @@ export const changePasswordSchema = z.object({
 
 // Esquema para crear beneficio (admin)
 export const createBenefitSchema = z.object({
-  titulo: z
+  title: z
     .string({ required_error: 'El título es requerido' })
     .min(3, 'El título debe tener al menos 3 caracteres')
     .max(255, 'El título no puede exceder 255 caracteres')
     .trim(),
   
-  descripcion: z
+  description: z
     .string()
     .max(1000, 'La descripción no puede exceder 1000 caracteres')
     .trim()
     .optional(),
   
-  costoPuntos: z
+  pointsCost: z
     .number({ required_error: 'El costo en puntos es requerido' })
     .int('El costo debe ser un número entero')
     .positive('El costo debe ser mayor a 0')
@@ -101,21 +101,21 @@ export const createBenefitSchema = z.object({
     .min(0, 'El stock no puede ser negativo')
     .max(1000000, 'El stock no puede exceder 1,000,000 unidades'),
   
-  imagenUrl: z
+  imageUrl: z
     .string()
     .url('URL de imagen inválida')
     .max(500, 'La URL no puede exceder 500 caracteres')
     .optional()
     .nullable(),
   
-  categoria: z
+  category: z
     .enum(['Descuentos', 'Productos', 'Servicios', 'Cultura', 'Ecología', 'Salud'], {
       errorMap: () => ({ message: 'Categoría inválida' }),
     })
     .optional()
     .nullable(),
   
-  activo: z.boolean().optional().default(true),
+  active: z.boolean().optional().default(true),
 });
 
 // Esquema para actualizar beneficio
@@ -123,26 +123,26 @@ export const updateBenefitSchema = createBenefitSchema.partial();
 
 // Esquema para crear noticia (admin)
 export const createNewsSchema = z.object({
-  titulo: z
+  title: z
     .string({ required_error: 'El título es requerido' })
     .min(5, 'El título debe tener al menos 5 caracteres')
     .max(255, 'El título no puede exceder 255 caracteres')
     .trim(),
   
-  cuerpo: z
+  body: z
     .string({ required_error: 'El cuerpo es requerido' })
     .min(10, 'El cuerpo debe tener al menos 10 caracteres')
     .max(10000, 'El cuerpo no puede exceder 10,000 caracteres')
     .trim(),
   
-  imagenUrl: z
+  imageUrl: z
     .string()
     .url('URL de imagen inválida')
     .max(500, 'La URL no puede exceder 500 caracteres')
     .optional()
     .nullable(),
   
-  publicada: z.boolean().optional().default(false),
+  published: z.boolean().optional().default(false),
 });
 
 // Esquema para actualizar noticia

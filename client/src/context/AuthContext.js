@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setAuthState((prev) => ({ ...prev, loading: true, error: null }));
 
-      const response = await authAPI.register(email, password, name);
+      const response = await authAPI.register(name, email, password, password);
       const { token, user } = response.data.data;
 
       // Guardar en AsyncStorage

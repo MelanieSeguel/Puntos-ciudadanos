@@ -24,8 +24,8 @@ export const authenticate = async (req, res, next) => {
       select: {
         id: true,
         email: true,
-        rol: true,
-        estado: true,
+        role: true,
+        status: true,
       },
     });
 
@@ -33,7 +33,7 @@ export const authenticate = async (req, res, next) => {
       throw new UnauthorizedError('Usuario no encontrado');
     }
 
-    if (user.estado !== 'ACTIVE') {
+    if (user.status !== 'ACTIVE') {
       throw new ForbiddenError('Tu cuenta no está activa');
     }
 
@@ -60,12 +60,12 @@ export const optionalAuth = async (req, res, next) => {
         select: {
           id: true,
           email: true,
-          rol: true,
-          estado: true,
+          role: true,
+          status: true,
         },
       });
 
-      if (user && user.estado === 'ACTIVE') {
+      if (user && user.status === 'ACTIVE') {
         req.user = user;
       }
     }

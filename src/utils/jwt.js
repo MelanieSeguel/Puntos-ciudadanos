@@ -80,7 +80,7 @@ export const createTokenPayload = (user) => {
   return {
     id: user.id,
     email: user.email,
-    rol: user.rol,
-    estado: user.estado,
+    role: user.role,
+    status: user.status,
   };
 };

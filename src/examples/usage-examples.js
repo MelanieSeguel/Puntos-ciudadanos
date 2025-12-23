@@ -31,7 +31,7 @@ export const getUser = asyncHandler(async (req, res) => {
 // ============================================
 
 export const createUser = asyncHandler(async (req, res) => {
-  const { email, nombre, password } = req.body;
+  const { email, name, password } = req.body;
   
   // Verificar si ya existe
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -41,7 +41,7 @@ export const createUser = asyncHandler(async (req, res) => {
   }
   
   const user = await prisma.user.create({
-    data: { email, nombre, passwordHash: await bcrypt.hash(password, 12) },
+    data: { email, name, passwordHash: await bcrypt.hash(password, 12) },
   });
   
   successResponse(res, user, 'Usuario creado exitosamente', 201);
@@ -70,11 +70,11 @@ export const redeemBenefit = asyncHandler(async (req, res) => {
       throw new NotFoundError('Beneficio');
     }
     
-    if (!benefit.activo) {
+    if (!benefit.active) {
       throw new ValidationError('Beneficio no disponible');
     }
     
-    if (wallet.saldoActual < benefit.costoPuntos) {
+    if (wallet.balance < benefit.pointsCost) {
       throw new ValidationError('Puntos insuficientes');
     }
     
@@ -87,7 +87,7 @@ export const redeemBenefit = asyncHandler(async (req, res) => {
       // Reducir saldo
       await updateWalletBalance(
         wallet.id,
-        -benefit.costoPuntos,
+        -benefit.pointsCost,
         wallet.version
       );
       
@@ -102,12 +102,12 @@ export const redeemBenefit = asyncHandler(async (req, res) => {
       const transaction = await tx.pointTransaction.create({
         data: {
           walletId: wallet.id,
-          tipo: 'SPENT',
-          monto: benefit.costoPuntos,
-          descripcion: `Canje: ${benefit.titulo}`,
+          type: 'SPENT',
+          amount: benefit.pointsCost,
+          description: `Canje: ${benefit.title}`,
           benefitId: benefit.id,
           metadata: {
-            benefitTitle: benefit.titulo,
+            benefitTitle: benefit.title,
             timestamp: new Date().toISOString(),
           },
         },
@@ -139,12 +139,12 @@ export const listBenefits = asyncHandler(async (req, res) => {
   
   const [benefits, total] = await Promise.all([
     prisma.benefit.findMany({
-      where: { activo: true },
+      where: { active: true },
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
     }),
-    prisma.benefit.count({ where: { activo: true } }),
+    prisma.benefit.count({ where: { active: true } }),
   ]);
   
   paginatedResponse(res, benefits, { page, limit, total });
@@ -158,12 +158,12 @@ import { body } from 'express-validator';
 import { validateRequest } from '../middlewares/validateRequest.js';
 
 export const createBenefitValidation = [
-  body('titulo')
+  body('title')
     .trim()
     .notEmpty().withMessage('El título es requerido')
     .isLength({ min: 3, max: 255 }).withMessage('El título debe tener entre 3 y 255 caracteres'),
   
-  body('costoPuntos')
+  body('pointsCost')
     .isInt({ min: 1 }).withMessage('El costo debe ser un número positivo'),
   
   body('stock')

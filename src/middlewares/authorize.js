@@ -19,7 +19,7 @@ export const authorize = (...allowedRoles) => {
       }
 
       // Verificar que el usuario tenga uno de los roles permitidos
-      if (!allowedRoles.includes(req.user.rol)) {
+      if (!allowedRoles.includes(req.user.role)) {
         throw new ForbiddenError('No tienes permisos para acceder a este recurso');
       }
 
@@ -58,7 +58,7 @@ export const isOwnerOrAdmin = (paramName = 'userId') => {
 
       const resourceUserId = req.params[paramName];
       const isOwner = req.user.id === resourceUserId;
-      const isAdmin = req.user.rol === 'ADMIN';
+      const isAdmin = req.user.role === 'ADMIN';
 
       if (!isOwner && !isAdmin) {
         throw new ForbiddenError('No tienes permisos para acceder a este recurso');

@@ -31,12 +31,12 @@ export const addPoints = async (userId, points, description, adminId) => {
     wallet = await prisma.wallet.create({
       data: {
         userId: userId,
-        saldoActual: 0,
+        balance: 0,
       },
     });
   }
 
-  const saldoAnterior = wallet.saldoActual;
+  const saldoAnterior = wallet.balance;
   const saldoNuevo = saldoAnterior + points;
 
   // Realizar transacción atómica
@@ -48,7 +48,7 @@ export const addPoints = async (userId, points, description, adminId) => {
         version: wallet.version, // Optimistic locking
       },
       data: {
-        saldoActual: saldoNuevo,
+        balance: saldoNuevo,
         version: { increment: 1 },
       },
     });
@@ -67,9 +67,9 @@ export const addPoints = async (userId, points, description, adminId) => {
     const transaction = await tx.pointTransaction.create({
       data: {
         walletId: wallet.id,
-        tipo: 'EARNED',
-        monto: points,
-        descripcion: description,
+        type: 'EARNED',
+        amount: points,
+        description: description,
         metadata: {
           saldoAnterior,
           saldoNuevo,
@@ -115,7 +115,7 @@ export const redeemBenefit = async (userId, benefitId) => {
     throw new NotFoundError('Beneficio no encontrado');
   }
 
-  if (!benefit.activo) {
+  if (!benefit.active) {
     throw new ValidationError('Este beneficio no está disponible');
   }
 
@@ -125,14 +125,14 @@ export const redeemBenefit = async (userId, benefitId) => {
 
   // 3. Validar saldo suficiente
   const wallet = user.wallet;
-  if (wallet.saldoActual < benefit.costoPuntos) {
+  if (wallet.balance < benefit.pointsCost) {
     throw new ValidationError(
-      `Saldo insuficiente. Necesitas ${benefit.costoPuntos} puntos, tienes ${wallet.saldoActual}`
+      `Saldo insuficiente. Necesitas ${benefit.pointsCost} puntos, tienes ${wallet.balance}`
     );
   }
 
-  const saldoAnterior = wallet.saldoActual;
-  const saldoNuevo = saldoAnterior - benefit.costoPuntos;
+  const saldoAnterior = wallet.balance;
+  const saldoNuevo = saldoAnterior - benefit.pointsCost;
 
   // 4. TRANSACCIÓN ATÓMICA con control de concurrencia
   try {
@@ -143,7 +143,7 @@ export const redeemBenefit = async (userId, benefitId) => {
           id: benefitId,
           version: benefit.version,
           stock: { gt: 0 },
-          activo: true,
+          active: true,
         },
         data: {
           stock: { decrement: 1 },
@@ -169,7 +169,7 @@ export const redeemBenefit = async (userId, benefitId) => {
           version: wallet.version,
         },
         data: {
-          saldoActual: saldoNuevo,
+          balance: saldoNuevo,
           version: { increment: 1 },
         },
       });
@@ -188,15 +188,15 @@ export const redeemBenefit = async (userId, benefitId) => {
       const transaction = await tx.pointTransaction.create({
         data: {
           walletId: wallet.id,
-          tipo: 'SPENT',
-          monto: benefit.costoPuntos,
-          descripcion: `Canje: ${benefit.titulo}`,
+          type: 'SPENT',
+          amount: benefit.pointsCost,
+          description: `Canje: ${benefit.title}`,
           benefitId: benefit.id,
           metadata: {
             saldoAnterior,
             saldoNuevo,
-            benefitTitle: benefit.titulo,
-            benefitCategory: benefit.categoria,
+            benefitTitle: benefit.title,
+            benefitCategory: benefit.category,
             status: 'PENDING',
             generatedAt: new Date().toISOString(),
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -249,13 +249,13 @@ export const getUserRedemptions = async (userId) => {
   const transactions = await prisma.pointTransaction.findMany({
     where: {
       walletId: wallet.id,
-      tipo: 'SPENT',
+      type: 'SPENT',
     },
     include: {
       benefit: true,
     },
     orderBy: {
-      fecha: 'desc',
+      createdAt: 'desc',
     },
   });
 
@@ -285,7 +285,7 @@ export const validateRedemption = async (transactionId, merchantId) => {
     throw new NotFoundError('Cupón no válido o no existe');
   }
 
-  if (transaction.tipo !== 'SPENT') {
+  if (transaction.type !== 'SPENT') {
     throw new ValidationError('Este QR no corresponde a un canje de beneficio');
   }
 
@@ -298,7 +298,7 @@ export const validateRedemption = async (transactionId, merchantId) => {
   // Obtener información del merchant
   const merchant = await prisma.user.findUnique({
     where: { id: merchantId },
-    select: { nombre: true },
+    select: { name: true },
   });
 
   // Marcar como validado
@@ -310,7 +310,7 @@ export const validateRedemption = async (transactionId, merchantId) => {
         status: 'CLAIMED',
         claimedAt: new Date().toISOString(),
         validatedBy: merchantId,
-        validatedByName: merchant?.nombre || 'Comercio',
+        validatedByName: merchant?.name || 'Comercio',
       },
     },
   });

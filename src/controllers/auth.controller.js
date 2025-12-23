@@ -17,7 +17,7 @@ import config from '../config/index.js';
  * @access  Public
  */
 export const register = asyncHandler(async (req, res) => {
-  const { nombre, email, password } = req.body;
+  const { name, email, password } = req.body;
 
   // Verificar si el usuario ya existe
   const existingUser = await prisma.user.findUnique({
@@ -34,28 +34,28 @@ export const register = asyncHandler(async (req, res) => {
   // Crear usuario con wallet
   const user = await prisma.user.create({
     data: {
-      nombre,
+      name,
       email,
       passwordHash,
-      rol: 'USER',
-      estado: 'ACTIVE',
+      role: 'USER',
+      status: 'ACTIVE',
       wallet: {
         create: {
-          saldoActual: 0,
+          balance: 0,
         },
       },
     },
     select: {
       id: true,
-      nombre: true,
+      name: true,
       email: true,
-      rol: true,
-      estado: true,
-      fechaRegistro: true,
+      role: true,
+      status: true,
+      createdAt: true,
       wallet: {
         select: {
           id: true,
-          saldoActual: true,
+          balance: true,
         },
       },
     },
@@ -90,7 +90,7 @@ export const login = asyncHandler(async (req, res) => {
       wallet: {
         select: {
           id: true,
-          saldoActual: true,
+          balance: true,
         },
       },
     },
@@ -101,15 +101,15 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   // Verificar estado del usuario
-  if (user.estado === 'SUSPENDED') {
+  if (user.status === 'SUSPENDED') {
     throw new ForbiddenError('Tu cuenta ha sido suspendida. Contacta al administrador.');
   }
 
-  if (user.estado === 'DELETED') {
+  if (user.status === 'DELETED') {
     throw new ForbiddenError('Esta cuenta ha sido eliminada');
   }
 
-  if (user.estado === 'INACTIVE') {
+  if (user.status === 'INACTIVE') {
     throw new ForbiddenError('Tu cuenta está inactiva. Contacta al administrador.');
   }
 
@@ -144,15 +144,15 @@ export const getMe = asyncHandler(async (req, res) => {
     where: { id: userId },
     select: {
       id: true,
-      nombre: true,
+      name: true,
       email: true,
-      rol: true,
-      estado: true,
-      fechaRegistro: true,
+      role: true,
+      status: true,
+      createdAt: true,
       wallet: {
         select: {
           id: true,
-          saldoActual: true,
+          balance: true,
           // version: Campo interno, no exponer al frontend
         },
       },
@@ -173,7 +173,7 @@ export const getMe = asyncHandler(async (req, res) => {
  */
 export const updateProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { nombre, email } = req.body;
+  const { name, email } = req.body;
 
   // Si se intenta actualizar el email, verificar que no exista
   if (email) {
@@ -189,16 +189,16 @@ export const updateProfile = asyncHandler(async (req, res) => {
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
-      ...(nombre && { nombre }),
+      ...(name && { name }),
       ...(email && { email }),
     },
     select: {
       id: true,
-      nombre: true,
+      name: true,
       email: true,
-      rol: true,
-      estado: true,
-      fechaRegistro: true,
+      role: true,
+      status: true,
+      createdAt: true,
     },
   });
 

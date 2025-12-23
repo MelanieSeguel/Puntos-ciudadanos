@@ -10,15 +10,15 @@ const router = Router();
  */
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { categoria, activo = 'true' } = req.query;
+    const { category, active = 'true' } = req.query;
 
     const where = {
-      activo: activo === 'true',
+      active: active === 'true',
       stock: { gt: 0 },
     };
 
-    if (categoria) {
-      where.categoria = categoria;
+    if (category) {
+      where.category = category;
     }
 
     const benefits = await prisma.benefit.findMany({
@@ -26,12 +26,12 @@ router.get('/', authenticate, async (req, res) => {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
-        titulo: true,
-        descripcion: true,
-        costoPuntos: true,
+        title: true,
+        description: true,
+        pointsCost: true,
         stock: true,
-        categoria: true,
-        activo: true,
+        category: true,
+        active: true,
         createdAt: true,
       },
     });

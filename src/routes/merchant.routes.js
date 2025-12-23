@@ -35,11 +35,11 @@ router.post(
         success: true,
         message: 'Cupón validado exitosamente',
         data: {
-          beneficio: result.benefit.titulo,
-          cliente: result.user.nombre,
+          beneficio: result.benefit.title,
+          cliente: result.user.name,
           fecha: new Date().toISOString(),
-          puntosUsados: result.transaction.monto,
-          comercio: req.user.nombre
+          puntosUsados: result.transaction.amount,
+          comercio: req.user.name
         }
       });
 
@@ -83,17 +83,17 @@ router.get(
           }
         },
         select: {
-          monto: true
+          amount: true
         }
       });
 
-      const totalPuntos = transactions.reduce((sum, t) => sum + t.monto, 0);
+      const totalPuntos = transactions.reduce((sum, t) => sum + t.amount, 0);
 
       res.json({
         success: true,
         message: 'Estadísticas del comercio',
         data: {
-          comercio: req.user.nombre,
+          comercio: req.user.name,
           qrsValidados: validatedCount,
           totalPuntosCanjeados: totalPuntos
         }

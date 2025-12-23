@@ -18,7 +18,7 @@ export const updateWalletBalance = async (walletId, amount, currentVersion) => {
       version: currentVersion,
     },
     data: {
-      saldoActual: {
+      balance: {
         increment: amount,
       },
       version: {
