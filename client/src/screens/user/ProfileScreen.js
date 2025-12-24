@@ -4,7 +4,7 @@
  */
 
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { AuthContext } from '../../context/AuthContext';
@@ -23,8 +23,8 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScreenWrapper bgColor={COLORS.light}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header del Perfil */}
         <View style={styles.profileHeader}>
           <View style={styles.avatar}>
@@ -201,5 +201,8 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: TYPOGRAPHY.caption,
     color: COLORS.gray,
+  },
+  scrollContent: {
+    paddingTop: Platform.OS === 'web' ? 0 : SPACING.md,
   },
 });

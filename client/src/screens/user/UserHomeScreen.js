@@ -192,7 +192,7 @@ export default function UserHomeScreen({ navigation }) {
   };
 
   return (
-    <ScreenWrapper bgColor={COLORS.white} padding={0} maxWidth={false}>
+    <ScreenWrapper bgColor={COLORS.white} padding={0} maxWidth={false} safeArea={false}>
       {/* HEADER FIJO EN WEB */}
       {Platform.OS === 'web' && (
         <View style={styles.fixedHeader}>
@@ -221,33 +221,13 @@ export default function UserHomeScreen({ navigation }) {
       )}
 
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
+        scrollEnabled={true}
+        showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* HEADER MÓVIL (solo en móvil) */}
-        {Platform.OS !== 'web' && (
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>Tus Estadísticas</Text>
-            </View>
-            <View style={styles.headerRight}>
-              <View style={styles.pointsBadge}>
-                <MaterialCommunityIcons name="star" size={16} color="#FFB84D" />
-                <Text style={styles.pointsText}>{balance.toLocaleString()}</Text>
-                <Text style={styles.pointsLabel}>PUNTOS</Text>
-              </View>
-              <View style={styles.userProfile}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{getInitials(userData.name)}</Text>
-                </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{userData.name}</Text>
-                  <Text style={styles.userEmail}>{userData.email}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
+        {/* EN MÓVIL, SIN HEADER (React Navigation lo maneja) */}
 
         {/* SALUDO */}
         <View style={styles.greeting}>
@@ -434,10 +414,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   scrollContent: {
-    paddingVertical: 0,
+    flexGrow: 1,
     paddingHorizontal: 0,
-    paddingTop: Platform.OS === 'web' ? 90 : SPACING.lg,
-    minHeight: '100vh',
+    paddingTop: Platform.OS === 'web' ? 90 : SPACING.md,
+    paddingBottom: SPACING.lg,
   },
   centerContainer: {
     flex: 1,
@@ -453,7 +433,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: SPACING.lg,
+    marginBottom: Platform.OS === 'web' ? SPACING.lg : SPACING.sm,
   },
   headerTitle: {
     fontSize: 28,
@@ -515,14 +495,15 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
   },
   greeting: {
-    marginBottom: SPACING.lg,
+    marginBottom: Platform.OS === 'web' ? SPACING.lg : SPACING.md,
     paddingHorizontal: SPACING.md,
+    paddingTop: Platform.OS === 'web' ? SPACING.md : 0,
   },
   greetingText: {
     fontSize: 24,
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: SPACING.sm,
+    marginBottom: Platform.OS === 'web' ? SPACING.sm : 0,
   },
   dateContainer: {
     flexDirection: 'row',
@@ -534,7 +515,7 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
   },
   mainContent: {
-    marginBottom: SPACING.xl,
+    marginBottom: Platform.OS === 'web' ? SPACING.xl : SPACING.md,
     gap: SPACING.md,
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     flex: Platform.OS === 'web' ? 1 : undefined,
@@ -561,18 +542,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
     letterSpacing: 1,
-    marginBottom: 4,
+    marginBottom: Platform.OS === 'web' ? 4 : 0,
   },
   balanceAmount: {
     fontSize: 48,
     fontWeight: '700',
     color: COLORS.dark,
-    lineHeight: 50,
+    lineHeight: Platform.OS === 'web' ? 50 : undefined,
   },
   balanceUnit: {
     fontSize: 14,
     color: COLORS.gray,
-    marginTop: 4,
+    marginTop: Platform.OS === 'web' ? 4 : 0,
   },
   balanceActions: {
     flexDirection: 'row',
@@ -622,13 +603,13 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: '700',
     color: COLORS.success,
-    marginBottom: SPACING.md,
+    marginBottom: Platform.OS === 'web' ? SPACING.md : 0,
   },
   progressBar: {
     height: 8,
     backgroundColor: '#E0E0E0',
     borderRadius: 4,
-    marginBottom: SPACING.md,
+    marginBottom: Platform.OS === 'web' ? SPACING.md : 0,
     overflow: 'hidden',
   },
   progressFill: {
@@ -692,12 +673,12 @@ const styles = StyleSheet.create({
   activityDesc: {
     fontSize: 11,
     color: COLORS.gray,
-    marginTop: 2,
+    marginTop: Platform.OS === 'web' ? 2 : 0,
   },
   activityTime: {
     fontSize: 10,
     color: COLORS.gray,
-    marginTop: 2,
+    marginTop: Platform.OS === 'web' ? 2 : 0,
     fontWeight: '500',
   },
   activityPoints: {
@@ -705,7 +686,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   earnSection: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md,
     paddingHorizontal: SPACING.md,
   },
   earnHeader: {
@@ -768,6 +749,7 @@ const styles = StyleSheet.create({
   benefitsSection: {
     marginBottom: SPACING.xl,
     paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
   },
   sectionTitle: {
     fontSize: 16,

@@ -15,7 +15,7 @@ export default function MerchantsManagementScreen() {
   ];
 
   return (
-    <ScreenWrapper bgColor={COLORS.light}>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
       <Text style={styles.title}>Gestión de Comercios</Text>
       <FlatList
         data={merchants}

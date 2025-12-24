@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
@@ -31,7 +31,7 @@ export default function EarnScreen() {
   );
 
   return (
-    <ScreenWrapper bgColor={COLORS.light}>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Formas de Ganar Puntos</Text>
         <Text style={styles.subtitle}>Acumula puntos fácilmente</Text>
@@ -43,6 +43,7 @@ export default function EarnScreen() {
         keyExtractor={(item) => item.id}
         scrollEnabled={false}
         style={styles.list}
+        contentContainerStyle={styles.listContent}
       />
 
       <View style={styles.info}>
@@ -125,5 +126,8 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.body2,
     color: COLORS.gray,
     lineHeight: 20,
+  },
+  listContent: {
+    paddingTop: Platform.OS === 'web' ? 0 : SPACING.md,
   },
 });

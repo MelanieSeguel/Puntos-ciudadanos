@@ -45,6 +45,7 @@ const ScreenWrapper = ({
           {
             paddingHorizontal: padding !== 0 ? (isWeb ? SPACING.lg : padding) : 0,
             paddingVertical: padding !== 0 ? (isWeb ? SPACING.md : padding) : 0,
+
           },
         ]}
       >

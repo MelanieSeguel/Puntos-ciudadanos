@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
@@ -17,8 +17,8 @@ export default function AdminDashboardScreen() {
   ];
 
   return (
-    <ScreenWrapper bgColor={COLORS.light}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>Panel de Control</Text>
 
         <View style={styles.statsGrid}>
@@ -67,4 +67,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: TYPOGRAPHY.body1, fontWeight: '600', color: COLORS.dark, marginBottom: SPACING.sm },
   sectionText: { fontSize: TYPOGRAPHY.body2, color: COLORS.gray },
+  scrollContent: {
+    paddingTop: Platform.OS === 'web' ? 0 : SPACING.md,
+  },
 });

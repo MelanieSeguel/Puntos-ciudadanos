@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from 'react-native';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
 
@@ -15,7 +15,7 @@ export default function UsersManagementScreen() {
   ];
 
   return (
-    <ScreenWrapper bgColor={COLORS.light}>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
       <Text style={styles.title}>Gestión de Usuarios</Text>
       <FlatList
         data={users}

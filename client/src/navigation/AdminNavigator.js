@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -18,6 +19,8 @@ const Tab = createBottomTabNavigator();
 const isWeb = Platform.OS === 'web';
 
 export default function AdminNavigator() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => {
@@ -51,7 +54,9 @@ export default function AdminNavigator() {
           tabBarLabel: tabConfig?.label,
           tabBarActiveTintColor: tabConfig?.color,
           tabBarInactiveTintColor: COLORS.gray,
-          tabBarStyle: isWeb ? styles.webTabBar : styles.mobileTabBar,
+          tabBarStyle: isWeb 
+            ? styles.webTabBar 
+            : { ...styles.mobileTabBar, paddingBottom: insets.bottom, height: 60 + insets.bottom },
         };
       }}
     >

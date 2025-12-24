@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { View, StyleSheet, Platform, TouchableOpacity, Text, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import UserHomeScreen from '../screens/user/UserHomeScreen';
@@ -115,10 +116,13 @@ function WebLayout() {
 // COMPONENTE: Mobile Layout (Bottom Tabs)
 // ============================================================================
 function MobileLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: true,
+        headerSafeAreaEnabled: false,
         headerStyle: {
           backgroundColor: COLORS.primary,
         },
@@ -145,7 +149,7 @@ function MobileLayout() {
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.gray,
-        tabBarStyle: styles.mobileTabBar,
+        tabBarStyle: { ...styles.mobileTabBar, paddingBottom: insets.bottom, height: 60 + insets.bottom },
         tabBarLabelStyle: styles.tabBarLabel,
       })}
     >

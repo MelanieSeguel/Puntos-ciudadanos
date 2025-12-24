@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
@@ -33,7 +33,7 @@ export default function BenefitsScreen() {
   );
 
   return (
-    <ScreenWrapper bgColor={COLORS.light}>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Beneficios Disponibles</Text>
         <Text style={styles.subtitle}>Canjea tus puntos por premios</Text>
@@ -43,6 +43,7 @@ export default function BenefitsScreen() {
         data={benefits}
         renderItem={renderBenefit}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
         scrollEnabled={false}
         style={styles.list}
       />
@@ -119,5 +120,8 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: TYPOGRAPHY.caption,
     color: COLORS.gray,
+  },
+  listContent: {
+    paddingTop: Platform.OS === 'web' ? 0 : SPACING.md,
   },
 });

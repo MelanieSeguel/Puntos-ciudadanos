@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -43,6 +44,8 @@ function ScannerStack() {
 }
 
 export default function MerchantNavigator() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => {
@@ -75,7 +78,9 @@ export default function MerchantNavigator() {
           tabBarLabel: tabConfig?.label,
           tabBarActiveTintColor: tabConfig?.color,
           tabBarInactiveTintColor: COLORS.gray,
-          tabBarStyle: isWeb ? styles.webTabBar : styles.mobileTabBar,
+          tabBarStyle: isWeb 
+            ? styles.webTabBar 
+            : { ...styles.mobileTabBar, paddingBottom: insets.bottom, height: 60 + insets.bottom },
         };
       }}
     >

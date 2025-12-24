@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
@@ -69,8 +70,8 @@ export default function HistorialScreen() {
   ]);
 
   return (
-    <ScreenWrapper bgColor={COLORS.white}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <ScreenWrapper bgColor={COLORS.white} safeArea={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: Platform.OS === 'web' ? 0 : SPACING.md }]}>
         <View style={styles.header}>
           <Text style={styles.title}>Historial de Actividades</Text>
           <Text style={styles.subtitle}>Todas tus transacciones de puntos</Text>

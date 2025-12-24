@@ -76,7 +76,7 @@ export default function HistoryScreen() {
   );
 
   return (
-    <ScreenWrapper bgColor={COLORS.light}>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Historial de Canjes</Text>
         <Text style={styles.subtitle}>Registro de transacciones</Text>

@@ -28,7 +28,7 @@ export default function ScannerScreen() {
   };
 
   return (
-    <ScreenWrapper bgColor={COLORS.light}>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Validar Cupón</Text>
         <Text style={styles.subtitle}>Escanea el código QR del cliente</Text>
