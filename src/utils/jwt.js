@@ -82,5 +82,6 @@ export const createTokenPayload = (user) => {
     email: user.email,
     role: user.role,
     status: user.status,
+    scope: 'FULL_ACCESS',
   };
 };
