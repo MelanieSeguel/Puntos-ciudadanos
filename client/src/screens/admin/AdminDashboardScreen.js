@@ -37,7 +37,7 @@ export default function AdminDashboardScreen() {
         </View>
 
         <TouchableOpacity style={styles.section}>
-          <Text style={styles.sectionTitle}>⚠️ Alertas Recientes</Text>
+          <Text style={styles.sectionTitle}>Alertas Recientes</Text>
           <Text style={styles.sectionText}>No hay alertas pendientes</Text>
         </TouchableOpacity>
       </ScrollView>

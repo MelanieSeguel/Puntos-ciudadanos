@@ -25,60 +25,10 @@ export default function UserHomeScreen({ navigation }) {
 
   const [userData, setUserData] = useState({ name: 'Usuario', email: '' });
   const [balance, setBalance] = useState(0);
-  const [monthlyPoints, setMonthlyPoints] = useState(350);
+  const [monthlyPoints, setMonthlyPoints] = useState(0);
   const [monthlyGoal] = useState(500);
-  const [activities, setActivities] = useState([
-    {
-      id: 1,
-      title: 'Transporte Ecológico',
-      description: 'Uso de bicicleta compartida por 30 min.',
-      points: '+15',
-      color: '#4CAF50',
-      icon: 'bike',
-      time: 'HACE 2 HORAS',
-    },
-    {
-      id: 2,
-      title: 'Refill de Agua',
-      description: 'Estación de carga Parque Central.',
-      points: '+5',
-      color: '#2196F3',
-      icon: 'water',
-      time: 'AYER, 14:30',
-    },
-    {
-      id: 3,
-      title: 'Canje Recompensa',
-      description: 'Descuento Pizzería Bella Napoli.',
-      points: '-200',
-      color: '#f44336',
-      icon: 'heart',
-      time: '22 OCT, 08:15',
-    },
-  ]);
-  const [earnOptions, setEarnOptions] = useState([
-    {
-      id: 1,
-      title: 'Recicla Vidrio',
-      description: 'Lleva tus botellas al punto limpio más...',
-      points: '+50 pts',
-      icon: 'recycle',
-    },
-    {
-      id: 2,
-      title: 'Voluntariado',
-      description: 'Únete a la limpieza de parques este sábado.',
-      points: '+100 pts',
-      icon: 'hand-heart',
-    },
-    {
-      id: 3,
-      title: 'Dona Ropa',
-      description: 'Dale una segunda vida a tus prendas usadas.',
-      points: '+75 pts',
-      icon: 'tshirt-crew',
-    },
-  ]);
+  const [activities, setActivities] = useState([]);
+  const [earnOptions, setEarnOptions] = useState([]);
   const [benefits, setBenefits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -105,15 +55,20 @@ export default function UserHomeScreen({ navigation }) {
         return;
       }
 
-      const [userRes, benefitsRes] = await Promise.all([
+      const [userRes, benefitsRes, transactionsRes] = await Promise.all([
         walletAPI.getBalance(),
         benefitsAPI.getAll(),
+        pointsAPI.getTransactions(), // Cargar historial de transacciones
       ]);
+
+      console.log('userRes:', userRes.data);
+      console.log('transactionsRes:', transactionsRes.data);
 
       // Extraer datos del usuario
       const user = userRes.data?.data;
       
       if (user) {
+        console.log('Usuario cargado:', user);
         setUserData({
           name: user.name || 'Usuario',
           email: user.email || '',
@@ -122,6 +77,39 @@ export default function UserHomeScreen({ navigation }) {
       } else {
         setUserData({ name: 'Usuario', email: '' });
       }
+
+      // Extraer y procesar transacciones (para activities)
+      const transactionsList = (transactionsRes.data?.data || []);
+      console.log('Transacciones cargadas:', transactionsList);
+      const formattedActivities = transactionsList.map(t => {
+        const iconMap = {
+          EARN: 'plus-circle',
+          REDEEM: 'minus-circle',
+          TRANSFER: 'transfer',
+        };
+        const colorMap = {
+          EARN: '#4CAF50',
+          REDEEM: '#f44336',
+          TRANSFER: '#2196F3',
+        };
+
+        return {
+          id: t.id,
+          title: t.description || 'Transacción',
+          description: t.description || '',
+          points: `${t.type === 'EARN' ? '+' : '-'}${t.amount}`,
+          color: colorMap[t.type] || '#9C27B0',
+          icon: iconMap[t.type] || 'history',
+          time: new Date(t.createdAt).toLocaleDateString('es-ES').toUpperCase(),
+        };
+      });
+      setActivities(formattedActivities);
+      
+      // Calcular puntos mensuales
+      const monthlyEarned = formattedActivities
+        .filter(a => a.points.startsWith('+'))
+        .reduce((sum, a) => sum + parseInt(a.points.substring(1)), 0);
+      setMonthlyPoints(monthlyEarned);
 
       // Extraer beneficios
       const beneficisList = (benefitsRes.data?.data || []).map(b => ({

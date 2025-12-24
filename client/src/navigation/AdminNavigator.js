@@ -4,8 +4,8 @@
  * Pestañas: Dashboard, Usuarios, Comercios, Reportes
  */
 
-import React from 'react';
-import { StyleSheet, Platform } from 'react-native';
+import React, { useContext, useState } from 'react';
+import { StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,12 +14,24 @@ import UsersManagementScreen from '../screens/admin/UsersManagementScreen';
 import MerchantsManagementScreen from '../screens/admin/MerchantsManagementScreen';
 import ReportsScreen from '../screens/admin/ReportsScreen';
 import { COLORS, TAB_CONFIG, SPACING } from '../theme/theme';
+import { AuthContext } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
 const isWeb = Platform.OS === 'web';
 
 export default function AdminNavigator() {
   const insets = useSafeAreaInsets();
+  const { logout, authState } = useContext(AuthContext);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = () => {
+    console.log('Botón logout presionado');
+    logout().then(() => {
+      console.log('Logout exitoso');
+    }).catch((err) => {
+      console.error('Error en logout:', err);
+    });
+  };
 
   return (
     <Tab.Navigator
@@ -36,6 +48,14 @@ export default function AdminNavigator() {
             fontWeight: '600',
             fontSize: 18,
           },
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={styles.logoutButton}
+            >
+              <MaterialCommunityIcons name="logout" size={20} color={COLORS.white} />
+            </TouchableOpacity>
+          ),
           tabBarIcon: ({ focused }) => {
             const iconMap = {
               AdminDashboard: 'view-dashboard',
@@ -98,5 +118,9 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.light,
     height: 70,
     paddingTop: SPACING.sm,
+  },
+  logoutButton: {
+    marginRight: SPACING.md,
+    padding: SPACING.sm,
   },
 });

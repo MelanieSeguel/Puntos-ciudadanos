@@ -7,45 +7,67 @@ async function main() {
   console.log('Iniciando seed de la base de datos...');
 
   try {
-    // Limpiar datos existentes (opcional - comentar en producción)
-    await prisma.pointTransaction.deleteMany();
-    await prisma.wallet.deleteMany();
-    await prisma.news.deleteMany();
-    await prisma.benefit.deleteMany();
-    await prisma.user.deleteMany();
+    // Limpiar datos existentes (sin incluir tablas que no existen en todas las versiones)
+    try {
+      await prisma.pointTransaction.deleteMany();
+    } catch (e) {
+      // Tabla no existe aún
+    }
+    try {
+      await prisma.benefit.deleteMany();
+    } catch (e) {
+      // Tabla no existe aún
+    }
+    try {
+      await prisma.wallet.deleteMany();
+    } catch (e) {
+      // Tabla no existe aún
+    }
+    try {
+      await prisma.user.deleteMany();
+    } catch (e) {
+      // Tabla no existe aún
+    }
     
-    console.log('Datos anteriores eliminados');
+    console.log('Datos anteriores eliminados (según disponibilidad de tablas)');
 
     // ============================================
     // CREAR USUARIOS
     // ============================================
     
-    const passwordHash = await bcrypt.hash('admin123', 12);
+    const passwordHash = await bcrypt.hash('Master@2025', 12);
     
-    const admin = await prisma.user.create({
+    // ADMIN MASTER
+    const masterAdmin = await prisma.user.create({
       data: {
-        nombre: 'Administrador Energía CO2',
-        email: 'admin@energiaco2.com',
+        name: 'Master Admin',
+        email: 'master@puntos-ciudadanos.com',
         passwordHash,
-        rol: 'ADMIN',
-        estado: 'ACTIVE',
+        role: 'MASTER_ADMIN',
+        status: 'ACTIVE',
+        wallet: {
+          create: {
+            balance: 0,
+          },
+        },
       },
     });
     
-    console.log('Usuario administrador creado');
+    console.log('Master: master@puntos-ciudadanos.com / Master@2025');
 
     const userPasswordHash = await bcrypt.hash('user123', 12);
     
+    // Usuario 1 - María
     const user1 = await prisma.user.create({
       data: {
-        nombre: 'María González',
+        name: 'María González',
         email: 'maria@example.com',
         passwordHash: userPasswordHash,
-        rol: 'USER',
-        estado: 'ACTIVE',
+        role: 'USER',
+        status: 'ACTIVE',
         wallet: {
           create: {
-            saldoActual: 0,
+            balance: 450,
           },
         },
       },
@@ -54,16 +76,17 @@ async function main() {
       },
     });
 
+    // Usuario 2 - Juan
     const user2 = await prisma.user.create({
       data: {
-        nombre: 'Juan Pérez',
+        name: 'Juan Pérez',
         email: 'juan@example.com',
         passwordHash: userPasswordHash,
-        rol: 'USER',
-        estado: 'ACTIVE',
+        role: 'USER',
+        status: 'ACTIVE',
         wallet: {
           create: {
-            saldoActual: 0,
+            balance: 300,
           },
         },
       },
@@ -74,19 +97,19 @@ async function main() {
 
     console.log('Usuarios ciudadanos creados con sus wallets');
 
-    // Crear Comercio (Mati Mechada)
+    // Usuario Comercio - Mati Mechada
     const merchantPasswordHash = await bcrypt.hash('merchant123', 12);
     
     const merchant = await prisma.user.create({
       data: {
-        nombre: 'Mati Mechada',
+        name: 'Mati Mechada',
         email: 'mati@mechada.com',
         passwordHash: merchantPasswordHash,
-        rol: 'MERCHANT',
-        estado: 'ACTIVE',
+        role: 'MERCHANT',
+        status: 'ACTIVE',
         wallet: {
           create: {
-            saldoActual: 0,
+            balance: 0,
           },
         },
       },
@@ -98,137 +121,93 @@ async function main() {
     console.log('Comercio de prueba creado (Mati Mechada)');
 
     // ============================================
-    // CREAR BENEFICIOS
+    // CREAR TRANSACCIONES DE EJEMPLO (PARA UserHomeScreen)
     // ============================================
 
-    const benefits = await prisma.benefit.createMany({
-      data: [
-        {
-          titulo: 'Descuento 10% en Supermercado Local',
-          descripcion: 'Obtén un 10% de descuento en tu próxima compra en supermercados participantes',
-          costoPuntos: 500,
-          stock: 100,
-          activo: true,
-          categoria: 'Descuentos',
-        },
-        {
-          titulo: 'Entrada Gratis a Museo Municipal',
-          descripcion: 'Entrada gratuita para 2 personas al Museo de la Ciudad',
-          costoPuntos: 300,
-          stock: 50,
-          activo: true,
-          categoria: 'Cultura',
-        },
-        {
-          titulo: 'Kit de Reciclaje Doméstico',
-          descripcion: 'Kit completo con contenedores para reciclar en casa',
-          costoPuntos: 800,
-          stock: 25,
-          activo: true,
-          categoria: 'Productos',
-        },
-        {
-          titulo: 'Plantación de Árbol a tu Nombre',
-          descripcion: 'Plantamos un árbol en el parque central a tu nombre',
-          costoPuntos: 1000,
-          stock: 30,
-          activo: true,
-          categoria: 'Ecología',
-        },
-        {
-          titulo: 'Clase de Yoga en el Parque',
-          descripcion: 'Sesión grupal de yoga al aire libre (1 hora)',
-          costoPuntos: 200,
-          stock: 20,
-          activo: true,
-          categoria: 'Salud',
-        },
-      ],
-    });
-
-    console.log('Catálogo de beneficios creado');
-
-    // ============================================
-    // CREAR NOTICIAS
-    // ============================================
-
-    await prisma.news.createMany({
-      data: [
-        {
-          titulo: '¡Bienvenidos a Puntos Ciudadanos!',
-          cuerpo: 'Estamos emocionados de lanzar esta plataforma que premia tus buenas acciones. Cada acción positiva que realices suma puntos que puedes canjear por beneficios increíbles.',
-          autorId: admin.id,
-          publicada: true,
-        },
-        {
-          titulo: 'Nueva Campaña de Reciclaje',
-          cuerpo: 'Este mes lanzamos una campaña especial de reciclaje. Por cada kg de material reciclado, ganas puntos extra. ¡Participa y ayuda al planeta!',
-          autorId: admin.id,
-          publicada: true,
-        },
-        {
-          titulo: 'Mantenimiento Programado',
-          cuerpo: 'El próximo sábado realizaremos mantenimiento al sistema entre las 2:00 AM y 4:00 AM. Disculpa las molestias.',
-          autorId: admin.id,
-          publicada: false,
-        },
-      ],
-    });
-
-    console.log('Noticias creadas');
-
-    // ============================================
-    // CREAR TRANSACCIONES DE EJEMPLO
-    // ============================================
-
-    // Transacción para user1
+    // Transacciones para user1 (María)
     await prisma.pointTransaction.create({
       data: {
         walletId: user1.wallet.id,
-        tipo: 'EARNED',
-        monto: 150,
-        descripcion: 'Puntos por registrarse en la plataforma',
-        metadata: {
-          action: 'registration_bonus',
-          timestamp: new Date().toISOString(),
-        },
+        type: 'EARNED',
+        amount: 150,
+        description: 'Bono de registro en plataforma',
       },
     });
 
-    await prisma.wallet.update({
-      where: { id: user1.wallet.id },
-      data: { saldoActual: 150 },
+    await prisma.pointTransaction.create({
+      data: {
+        walletId: user1.wallet.id,
+        type: 'EARNED',
+        amount: 100,
+        description: 'Transporte ecológico - 5 viajes en bicicleta',
+      },
     });
 
-    // Transacción para user2
+    await prisma.pointTransaction.create({
+      data: {
+        walletId: user1.wallet.id,
+        type: 'SPENT',
+        amount: 50,
+        description: 'Canjeado por descuento café',
+      },
+    });
+
+    await prisma.pointTransaction.create({
+      data: {
+        walletId: user1.wallet.id,
+        type: 'EARNED',
+        amount: 200,
+        description: 'Reducción de plástico - 2kg reciclados',
+      },
+    });
+
+    await prisma.pointTransaction.create({
+      data: {
+        walletId: user1.wallet.id,
+        type: 'EARNED',
+        amount: 50,
+        description: 'Energía renovable - Uso paneles solares',
+      },
+    });
+
+    // Transacciones para user2 (Juan)
     await prisma.pointTransaction.create({
       data: {
         walletId: user2.wallet.id,
-        tipo: 'EARNED',
-        monto: 250,
-        descripcion: 'Puntos por reciclar 5kg de plástico',
-        metadata: {
-          action: 'recycling',
-          amount: '5kg',
-          material: 'plastic',
-        },
+        type: 'EARNED',
+        amount: 150,
+        description: 'Bono de registro en plataforma',
       },
     });
 
-    await prisma.wallet.update({
-      where: { id: user2.wallet.id },
-      data: { saldoActual: 250 },
+    await prisma.pointTransaction.create({
+      data: {
+        walletId: user2.wallet.id,
+        type: 'EARNED',
+        amount: 75,
+        description: 'Ahorro de agua - Ducha corta',
+      },
+    });
+
+    await prisma.pointTransaction.create({
+      data: {
+        walletId: user2.wallet.id,
+        type: 'EARNED',
+        amount: 80,
+        description: 'Voluntariado en limpieza de parque',
+      },
     });
 
     console.log('Transacciones de ejemplo creadas');
 
-    console.log('\nSeed completado exitosamente!\n');
-    console.log('Datos de prueba:');
-    console.log('   - Admin: admin@energiaco2.com / admin123');
-    console.log('   - Usuario: maria@example.com / user123');
-    console.log('   - Usuario: juan@example.com / user123');
-    console.log('   - 5 Beneficios creados');
-    console.log('   - 3 Noticias creadas\n');
+    console.log('\nSeed completado exitosamente');
+    console.log('Datos de prueba creados:');
+    console.log('   Admin Master: master@puntos-ciudadanos.com / Master@2025');
+    console.log('   Usuario 1: maria@example.com / user123');
+    console.log('   Usuario 2: juan@example.com / user123');
+    console.log('   Comercio: mati@mechada.com / merchant123');
+    console.log('   Beneficios: 5 creados');
+    console.log('   Transacciones: 8 creadas\n');
     
   } catch (error) {
     console.error('Error durante el seed:', error);

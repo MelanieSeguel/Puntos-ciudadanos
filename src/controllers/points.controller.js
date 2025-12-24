@@ -3,6 +3,25 @@ import { successResponse } from '../utils/response.js';
 import * as pointsService from '../services/points.service.js';
 
 /**
+ * GET /api/v1/points/transactions
+ * Obtener historial de transacciones del usuario autenticado
+ */
+export const getTransactions = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+  const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+
+  const transactions = await pointsService.getUserTransactions(userId, limit, offset);
+
+  successResponse(
+    res,
+    transactions,
+    'Transacciones obtenidas exitosamente',
+    200
+  );
+});
+
+/**
  * POST /api/v1/points/add
  * Agregar puntos a un usuario (Solo Admin)
  */

@@ -160,6 +160,9 @@ export const AuthProvider = ({ children }) => {
       // Limpiar header de axios
       delete api.defaults.headers.common['Authorization'];
 
+      // Pequeño delay para asegurar que se procesa
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Actualizar estado
       setAuthState({
         token: null,
@@ -169,8 +172,11 @@ export const AuthProvider = ({ children }) => {
         loading: false,
         error: null,
       });
+
+      return true;
     } catch (error) {
       logError('logout', error);
+      throw error;
     }
   };
 

@@ -2,6 +2,47 @@ import prisma from '../config/database.js';
 import { AppError, NotFoundError, ValidationError, ConcurrencyError } from '../utils/errors.js';
 
 /**
+ * Obtener transacciones de un usuario
+ * @param {string} userId - ID del usuario
+ * @param {number} limit - Cantidad de resultados
+ * @param {number} offset - Salto de resultados
+ * @returns {Promise<Array>}
+ */
+export const getUserTransactions = async (userId, limit = 10, offset = 0) => {
+  // Verificar que el usuario existe
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new NotFoundError('Usuario no encontrado');
+  }
+
+  // Obtener transacciones del usuario ordenadas por fecha descendente
+  const transactions = await prisma.pointTransaction.findMany({
+    where: {
+      wallet: {
+        userId: userId,
+      },
+    },
+    select: {
+      id: true,
+      type: true,
+      amount: true,
+      description: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+    take: limit,
+    skip: offset,
+  });
+
+  return transactions;
+};
+
+/**
  * Agregar puntos a un usuario
  * @param {string} userId - ID del usuario receptor
  * @param {number} points - Cantidad de puntos a agregar

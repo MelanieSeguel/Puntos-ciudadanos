@@ -93,6 +93,8 @@ export const userAPI = {
 export const pointsAPI = {
   scanQR: (qrCode) => api.post('/points/scan', { qrCode }),
   redeemBenefit: (benefitId) => api.post('/points/redeem', { benefitId }),
+  getTransactions: (limit = 10, offset = 0) => 
+    api.get(`/points/transactions?limit=${limit}&offset=${offset}`),
 };
 
 // Servicios de beneficios

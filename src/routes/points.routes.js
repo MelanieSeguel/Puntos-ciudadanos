@@ -8,6 +8,17 @@ import { addPointsSchema, redeemBenefitSchema } from '../validators/schemas.js';
 const router = Router();
 
 /**
+ * GET /api/v1/points/transactions
+ * Obtener historial de transacciones del usuario
+ * Usuario autenticado
+ */
+router.get(
+  '/transactions',
+  authenticate,
+  pointsController.getTransactions
+);
+
+/**
  * POST /api/v1/points/add
  * Agregar puntos a un usuario
  * Solo administradores

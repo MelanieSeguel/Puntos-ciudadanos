@@ -81,7 +81,7 @@ function RootNavigator({ authState }) {
     );
   }
 
-  if (authState.role === 'ADMIN') {
+  if (authState.role === 'MASTER_ADMIN' || authState.role === 'SUPPORT_ADMIN') {
     return (
       <RootStack.Navigator
         screenOptions={{
