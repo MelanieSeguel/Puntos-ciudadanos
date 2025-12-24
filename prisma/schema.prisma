@@ -62,9 +62,10 @@ model User {
   passwordHash      String           @map("password_hash") @db.VarChar(255)
   role              UserRole         @default(USER)
   status            UserStatus       @default(ACTIVE)
+  mustChangePassword Boolean         @default(false)
   
   // Timestamps
-  fechaRegistro     DateTime         @default(now()) @map("fecha_registro") @db.Timestamptz(3)
+  registeredAt      DateTime         @default(now()) @map("fecha_registro") @db.Timestamptz(3)
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
   
@@ -131,15 +132,15 @@ model PointTransaction {
 model Benefit {
   id               String             @id @default(uuid())
   merchantId       String             @map("merchant_id")
-  title            String             @map("titulo") @db.VarChar(255)
-  description      String?            @map("descripcion") @db.Text
-  pointsCost       Int                @map("costo_puntos")
+  title            String             @db.VarChar(255)
+  description      String?            @db.Text
+  pointsCost       Int
   stock            Int                @default(0)
-  imageUrl         String?            @map("imagen_url") @db.VarChar(500)
-  active           Boolean            @default(true) @map("activo")
-  category         String?            @map("categoria") @db.VarChar(100) // Ej: "Descuentos", "Productos", "Servicios"
-  cooldownDays     Int                @default(0) @map("cooldown_days") // Días de espera para re-canje
-  version          Int                @default(0) // Optimistic Concurrency Control para stock
+  imageUrl         String?            @db.VarChar(500)
+  active           Boolean            @default(true)
+  category         String?            @db.VarChar(100)
+  cooldownDays     Int                @default(0) @map("cooldown_days")
+  version          Int                @default(0)
   
   // Timestamps
   createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -147,7 +148,7 @@ model Benefit {
   
   // Relaciones
   merchant         User               @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  transactions     PointTransaction[] // Transacciones que usaron este beneficio
+  transactions     PointTransaction[]
   
   @@index([merchantId])
   @@index([active])
@@ -158,15 +159,15 @@ model Benefit {
 /// Perfil de Comerciante (Normalización 3NF)
 model MerchantProfile {
   id            String   @id @default(uuid())
-  userId        String   @unique @map("user_id")
-  storeName     String   @db.VarChar(255) @map("store_name")
+  userId        String   @unique
+  storeName     String   @db.VarChar(255)
   address       String?  @db.VarChar(500)
   phone         String?  @db.VarChar(20)
   rut           String?  @unique @db.VarChar(20)
   
   // Timestamps
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
   
   // Relaciones
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -179,15 +180,15 @@ model Mission {
   id            String         @id @default(uuid())
   name          String         @unique @db.VarChar(255)
   description   String?        @db.Text
-  points        Int            // Valor positivo de puntos a otorgar
-  frequency     FrequencyType  // Define la lógica del cooldown
-  cooldownDays  Int            @default(0) @map("cooldown_days") // Días exactos de bloqueo tras aprobación
-  evidenceType  String         @db.VarChar(50) @map("evidence_type") // Ej: "PDF", "FOTO", "QR", "DOCUMENTO"
+  points        Int
+  frequency     FrequencyType
+  cooldownDays  Int            @default(0)
+  evidenceType  String         @db.VarChar(50)
   active        Boolean        @default(true)
   
   // Timestamps
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
   
   // Relaciones
   submissions   MissionSubmission[]
@@ -200,16 +201,16 @@ model Mission {
 /// Bandeja de Aprobaciones y Evidencias (separación de definición vs ejecución - 3NF)
 model MissionSubmission {
   id             String           @id @default(uuid())
-  userId         String           @map("user_id")
-  missionId      String           @map("mission_id")
-  evidenceUrl    String           @db.VarChar(500) @map("evidence_url")
+  userId         String
+  missionId      String
+  evidenceUrl    String           @db.VarChar(500)
   status         SubmissionStatus @default(PENDING)
-  observation    String?          @db.Text // Motivos de rechazo u observaciones
-  validatedById  String?          @map("validated_by_id") // ID del Admin que aprobó/rechazó
+  observation    String?          @db.Text
+  validatedById  String?
   
   // Timestamps
-  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  validatedAt    DateTime?        @map("validated_at") @db.Timestamptz(3)
+  createdAt      DateTime         @default(now()) @db.Timestamptz(3)
+  validatedAt    DateTime?
   
   // Relaciones
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -226,14 +227,14 @@ model MissionSubmission {
 /// Auditoría y Transparencia: Historial de decisiones administrativas
 model AdminLog {
   id          String   @id @default(uuid())
-  adminId     String   @map("admin_id")
-  action      String   @db.VarChar(255) // Ej: "APPROVE_MISSION", "EDIT_POINTS", "BLOCK_USER", "CREATE_MISSION"
-  targetId    String   @db.VarChar(255) @map("target_id") // ID del elemento afectado
-  metadata    Json?    // Estado anterior y estado nuevo
+  adminId     String
+  action      String   @db.VarChar(255)
+  targetId    String   @db.VarChar(255)
+  metadata    Json?
   description String?  @db.Text
   
   // Timestamps
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
   
   // Relaciones
   admin       User     @relation(fields: [adminId], references: [id], onDelete: Cascade)

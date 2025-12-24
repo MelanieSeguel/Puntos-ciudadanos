@@ -120,10 +120,45 @@ export const login = asyncHandler(async (req, res) => {
     throw new UnauthorizedError('Credenciales inválidas');
   }
 
+  // ========================================
+  // SEGURIDAD DE ADMINISTRADORES
+  // Verificar si el usuario es admin y debe cambiar contraseña inicial
+  // ========================================
+  if (
+    (user.role === 'MASTER_ADMIN' || user.role === 'SUPPORT_ADMIN') &&
+    user.mustChangePassword
+  ) {
+    // No generar token de sesión completo, pero sí un token limitado
+    // para que el usuario pueda acceder solo a la ruta de cambio de contraseña
+    const limitedToken = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      scope: 'CHANGE_PASSWORD_REQUIRED', // Scope limitado
+    });
+
+    // Remover passwordHash del objeto user
+    const { passwordHash, ...userWithoutPassword } = user;
+
+    // Retornar respuesta indicando que debe cambiar contraseña
+    return successResponse(
+      res,
+      {
+        user: userWithoutPassword,
+        token: limitedToken,
+        requirePasswordChange: true,
+        message:
+          'Debe cambiar su contraseña inicial por razones de seguridad',
+      },
+      'Cambio de contraseña requerido',
+      200
+    );
+  }
+
   // Remover passwordHash del objeto user
   const { passwordHash, ...userWithoutPassword } = user;
 
-  // Generar token
+  // Generar token completo para usuarios normales o admins con contraseña ya cambiada
   const token = generateToken(createTokenPayload(user));
 
   successResponse(res, {
@@ -233,13 +268,39 @@ export const changePassword = asyncHandler(async (req, res) => {
   // Hashear nueva contraseña
   const newPasswordHash = await bcrypt.hash(newPassword, config.bcrypt.rounds);
 
-  // Actualizar contraseña
-  await prisma.user.update({
+  // Actualizar contraseña y marcar que ya fue cambiada (para admins)
+  const updatedUser = await prisma.user.update({
     where: { id: userId },
-    data: { passwordHash: newPasswordHash },
+    data: {
+      passwordHash: newPasswordHash,
+      mustChangePassword: false, // Marcar que la contraseña inicial ha sido cambiada
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      mustChangePassword: true,
+    },
   });
 
-  successResponse(res, null, 'Contraseña actualizada exitosamente');
+  // Registrar en el log administrativo (si el usuario es admin)
+  if (updatedUser.role === 'MASTER_ADMIN' || updatedUser.role === 'SUPPORT_ADMIN') {
+    await prisma.adminLog.create({
+      data: {
+        adminId: userId,
+        action: 'CHANGE_PASSWORD',
+        targetId: userId,
+        description: 'Cambio de contraseña inicial realizado',
+        metadata: {
+          timestamp: new Date(),
+        },
+      },
+    });
+  }
+
+  successResponse(res, updatedUser, 'Contraseña actualizada exitosamente');
 });
 
 /**

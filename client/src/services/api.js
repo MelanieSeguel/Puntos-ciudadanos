@@ -1,11 +1,11 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Cambiar según tu entorno:
-// Para desarrollo local web: http://localhost:3000/api/v1
-// Para dispositivo físico: http://[TU_IP_LOCAL]:3000/api/v1
-// Ejemplo: http://192.168.1.100:3000/api/v1
-const API_URL = 'http://localhost:3000/api/v1';
+const HOST_IP = '192.168.1.82';
+const PORT = '3000';
+const API_VERSION = 'v1';
+
+let API_URL = `http://${HOST_IP}:${PORT}/api/${API_VERSION}`;
 
 // Helper para obtener el token (compatible con navegador y React Native)
 const getToken = async () => {
@@ -37,12 +37,8 @@ api.interceptors.request.use(
       const token = await getToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('[API] Token añadido al header');
-      } else {
-        console.log('[API] No hay token disponible');
       }
     } catch (error) {
-      console.error('[API] Error al obtener token:', error);
     }
     return config;
   },
@@ -56,7 +52,6 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      console.warn('[API] 401 Unauthorized - Token inválido o expirado');
       // Token inválido o expirado
       try {
         if (AsyncStorage?.multiRemove) {
@@ -67,7 +62,6 @@ api.interceptors.response.use(
           window.localStorage.removeItem('userRole');
         }
       } catch (err) {
-        console.error('Error al limpiar storage:', err);
       }
     }
     return Promise.reject(error);

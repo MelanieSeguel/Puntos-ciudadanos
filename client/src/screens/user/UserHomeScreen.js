@@ -22,12 +22,6 @@ const { width } = Dimensions.get('window');
 
 export default function UserHomeScreen({ navigation }) {
   const { authState, logout } = useContext(AuthContext);
-  
-  console.log('[UserHomeScreen] Mount/Render: authState=', {
-    authenticated: authState.authenticated,
-    hasToken: !!authState.token,
-    user: authState.user,
-  });
 
   const [userData, setUserData] = useState({ name: 'Usuario', email: '' });
   const [balance, setBalance] = useState(0);
@@ -91,14 +85,10 @@ export default function UserHomeScreen({ navigation }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log('[UserHomeScreen] useEffect: auth changed', { authenticated: authState.authenticated, hasToken: !!authState.token });
-    
     // Solo cargar datos si el usuario está autenticado
     if (authState.authenticated && authState.token) {
-      console.log('[UserHomeScreen] Calling loadData()');
       loadData();
     } else {
-      console.log('[UserHomeScreen] Usuario no autenticado');
       setUserData({ name: 'Usuario no autenticado', email: '' });
       setError('Por favor inicia sesión para ver tus datos');
     }
@@ -115,32 +105,22 @@ export default function UserHomeScreen({ navigation }) {
         return;
       }
 
-      console.log('[UserHomeScreen] Cargando datos con token:', authState.token.substring(0, 20) + '...');
-
       const [userRes, benefitsRes] = await Promise.all([
         walletAPI.getBalance(),
         benefitsAPI.getAll(),
       ]);
 
-      console.log('[UserHomeScreen] Response completo de user:', JSON.stringify(userRes, null, 2));
-      console.log('[UserHomeScreen] Response estructura:', {
-        userRes: userRes?.data,
-        benefitsCount: benefitsRes?.data?.data?.length
-      });
-
       // Extraer datos del usuario
       const user = userRes.data?.data;
-      console.log('[UserHomeScreen] Usuario objeto completo:', JSON.stringify(user, null, 2));
       
       if (user) {
-        console.log('[UserHomeScreen] Usuario cargado:', user.name);
         setUserData({
           name: user.name || 'Usuario',
           email: user.email || '',
         });
         setBalance(user.wallet?.balance || 0);
       } else {
-        console.warn('[UserHomeScreen] Usuario es null/undefined, response:', userRes?.data);
+        setUserData({ name: 'Usuario', email: '' });
       }
 
       // Extraer beneficios
@@ -153,7 +133,6 @@ export default function UserHomeScreen({ navigation }) {
         redeemable: b.stock > 0,
       }));
       setBenefits(beneficisList);
-      console.log('[UserHomeScreen] ' + beneficisList.length + ' beneficios cargados');
 
     } catch (err) {
       const errorMessage = getErrorMessage(err);
