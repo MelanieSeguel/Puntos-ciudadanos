@@ -61,14 +61,10 @@ export default function UserHomeScreen({ navigation }) {
         pointsAPI.getTransactions(), // Cargar historial de transacciones
       ]);
 
-      console.log('userRes:', userRes.data);
-      console.log('transactionsRes:', transactionsRes.data);
-
       // Extraer datos del usuario
       const user = userRes.data?.data;
       
       if (user) {
-        console.log('Usuario cargado:', user);
         setUserData({
           name: user.name || 'Usuario',
           email: user.email || '',
@@ -80,7 +76,6 @@ export default function UserHomeScreen({ navigation }) {
 
       // Extraer y procesar transacciones (para activities)
       const transactionsList = (transactionsRes.data?.data || []);
-      console.log('Transacciones cargadas:', transactionsList);
       const formattedActivities = transactionsList.map(t => {
         const iconMap = {
           EARN: 'plus-circle',

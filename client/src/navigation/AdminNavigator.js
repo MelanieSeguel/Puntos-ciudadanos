@@ -8,15 +8,20 @@ import React, { useContext, useState } from 'react';
 import { StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 import UsersManagementScreen from '../screens/admin/UsersManagementScreen';
 import MerchantsManagementScreen from '../screens/admin/MerchantsManagementScreen';
 import ReportsScreen from '../screens/admin/ReportsScreen';
+import SubmissionsApprovalScreen from '../screens/admin/SubmissionsApprovalScreen';
+import MissionsManagementScreen from '../screens/admin/MissionsManagementScreen';
+import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
 import { COLORS, TAB_CONFIG, SPACING } from '../theme/theme';
 import { AuthContext } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 const isWeb = Platform.OS === 'web';
 
 export default function AdminNavigator() {
@@ -32,6 +37,78 @@ export default function AdminNavigator() {
       console.error('Error en logout:', err);
     });
   };
+
+  // Stack para Misiones con gestión
+  function MissionsStack() {
+    return (
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: COLORS.admin,
+          },
+          headerTintColor: COLORS.white,
+          headerTitleStyle: {
+            fontWeight: '600',
+          },
+        }}
+      >
+        <Stack.Screen
+          name="MissionsMain"
+          component={MissionsManagementScreen}
+          options={{ title: 'Gestión de Misiones' }}
+        />
+      </Stack.Navigator>
+    );
+  }
+
+  // Stack para Aprobaciones
+  function ApprovalsStack() {
+    return (
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: COLORS.admin,
+          },
+          headerTintColor: COLORS.white,
+          headerTitleStyle: {
+            fontWeight: '600',
+          },
+        }}
+      >
+        <Stack.Screen
+          name="ApprovalsMain"
+          component={SubmissionsApprovalScreen}
+          options={{ title: 'Aprobaciones Pendientes' }}
+        />
+      </Stack.Navigator>
+    );
+  }
+
+  // Stack para Configuración
+  function SettingsStack() {
+    return (
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: COLORS.admin,
+          },
+          headerTintColor: COLORS.white,
+          headerTitleStyle: {
+            fontWeight: '600',
+          },
+        }}
+      >
+        <Stack.Screen
+          name="SettingsMain"
+          component={AdminSettingsScreen}
+          options={{ title: 'Configuración del Sistema' }}
+        />
+      </Stack.Navigator>
+    );
+  }
 
   return (
     <Tab.Navigator
@@ -62,6 +139,9 @@ export default function AdminNavigator() {
               Users: 'account-multiple',
               Merchants: 'store',
               Reports: 'chart-line',
+              Missions: 'target',
+              Approvals: 'check-circle',
+              Settings: 'cog',
             };
             return (
               <MaterialCommunityIcons
@@ -86,6 +166,16 @@ export default function AdminNavigator() {
         options={{ title: 'Dashboard' }}
       />
       <Tab.Screen
+        name="Missions"
+        component={MissionsStack}
+        options={{ headerShown: false, title: 'Misiones' }}
+      />
+      <Tab.Screen
+        name="Approvals"
+        component={ApprovalsStack}
+        options={{ headerShown: false, title: 'Aprobaciones' }}
+      />
+      <Tab.Screen
         name="Users"
         component={UsersManagementScreen}
         options={{ title: 'Usuarios' }}
@@ -99,6 +189,11 @@ export default function AdminNavigator() {
         name="Reports"
         component={ReportsScreen}
         options={{ title: 'Reportes' }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsStack}
+        options={{ headerShown: false, title: 'Configuración' }}
       />
     </Tab.Navigator>
   );

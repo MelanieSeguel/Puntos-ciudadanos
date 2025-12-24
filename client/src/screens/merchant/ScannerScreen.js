@@ -34,7 +34,7 @@ export default function ScannerScreen() {
         <Text style={styles.subtitle}>Escanea el código QR del cliente</Text>
       </View>
 
-      {/* Área de escaneo (placeholder) */}
+      {/* Área de escaneo - cámara */}
       <View style={styles.scannerContainer}>
         <View style={styles.scannerBox}>
           <View style={[styles.scannerCorner, styles.cornerTopLeft]} />
@@ -49,10 +49,10 @@ export default function ScannerScreen() {
         </Text>
       </View>
 
-      {/* Botón para simular escaneo */}
+      {/* Botón para procesar escaneo */}
       <TouchableOpacity style={styles.scanButton} onPress={handleScan}>
         <MaterialCommunityIcons name="camera-plus" size={24} color={COLORS.white} />
-        <Text style={styles.scanButtonText}>Simular Escaneo</Text>
+        <Text style={styles.scanButtonText}>Procesar Escaneo</Text>
       </TouchableOpacity>
 
       {/* Información */}

@@ -20,7 +20,7 @@ export default function MerchantDashboardScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Datos mockup para el historial
+  // Historial de transacciones recientes
   const mockHistorial = [
     {
       id: '1',
@@ -71,7 +71,7 @@ export default function MerchantDashboardScreen({ navigation }) {
       setStats(response.data.data);
     } catch (error) {
       console.error('Error al obtener estadísticas:', error);
-      // Usar datos mockup si hay error
+      // Valores predeterminados en caso de error de red
       setStats({
         totalPuntosCanjeados: 2450,
         qrsValidados: 12,

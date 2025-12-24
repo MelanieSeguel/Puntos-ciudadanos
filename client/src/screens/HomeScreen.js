@@ -62,7 +62,7 @@ export default function HomeScreen() {
       <View style={styles.footer}>
         <Text style={styles.footerText}>Autenticación funcionando correctamente</Text>
         <Text style={styles.footerText}>Rol guardado en AsyncStorage</Text>
-        <Text style={styles.footerText}>Listo para agregar navegación</Text>
+        <Text style={styles.footerText}>Sistema de navegación por roles configurado</Text>
       </View>
     </View>
   );

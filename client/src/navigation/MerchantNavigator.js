@@ -13,6 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import MerchantDashboardScreen from '../screens/merchant/MerchantDashboardScreen';
 import ScannerScreen from '../screens/merchant/ScannerScreen';
 import HistoryScreen from '../screens/merchant/HistoryScreen';
+import MerchantStockScreen from '../screens/merchant/MerchantStockScreen';
 import { COLORS, TAB_CONFIG, SPACING } from '../theme/theme';
 
 const Tab = createBottomTabNavigator();
@@ -43,6 +44,30 @@ function ScannerStack() {
   );
 }
 
+// Stack para Stock
+function StockStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: COLORS.merchant,
+        },
+        headerTintColor: COLORS.white,
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="StockMain"
+        component={MerchantStockScreen}
+        options={{ title: 'Mi Stock' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function MerchantNavigator() {
   const insets = useSafeAreaInsets();
 
@@ -64,6 +89,7 @@ export default function MerchantNavigator() {
           tabBarIcon: ({ focused }) => {
             const iconMap = {
               MerchantDashboard: 'chart-box',
+              Stock: 'package',
               Scanner: 'qrcode-scan',
               History: 'history',
             };
@@ -90,9 +116,14 @@ export default function MerchantNavigator() {
         options={{ title: 'Dashboard' }}
       />
       <Tab.Screen
+        name="Stock"
+        component={StockStack}
+        options={{ headerShown: false, title: 'Mi Stock' }}
+      />
+      <Tab.Screen
         name="Scanner"
         component={ScannerStack}
-        options={{ title: 'Validar' }}
+        options={{ headerShown: false, title: 'Validar' }}
       />
       <Tab.Screen
         name="History"

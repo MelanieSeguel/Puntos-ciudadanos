@@ -94,6 +94,11 @@ export const TAB_CONFIG = {
       color: COLORS.merchant,
     },
     {
+      name: 'Stock',
+      label: 'Mi Stock',
+      color: COLORS.merchant,
+    },
+    {
       name: 'Scanner',
       label: 'Validar',
       color: COLORS.merchant,
@@ -112,6 +117,16 @@ export const TAB_CONFIG = {
       color: COLORS.admin,
     },
     {
+      name: 'Missions',
+      label: 'Misiones',
+      color: COLORS.admin,
+    },
+    {
+      name: 'Approvals',
+      label: 'Aprobaciones',
+      color: COLORS.admin,
+    },
+    {
       name: 'Users',
       label: 'Usuarios',
       color: COLORS.admin,
@@ -124,6 +139,11 @@ export const TAB_CONFIG = {
     {
       name: 'Reports',
       label: 'Reportes',
+      color: COLORS.admin,
+    },
+    {
+      name: 'Settings',
+      label: 'Configuración',
       color: COLORS.admin,
     },
   ],

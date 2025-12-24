@@ -9,13 +9,20 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Platform, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import UserHomeScreen from '../screens/user/UserHomeScreen';
 import BenefitsScreen from '../screens/user/BenefitsScreen';
 import EarnScreen from '../screens/user/EarnScreen';
 import ProfileScreen from '../screens/user/ProfileScreen';
 import HistorialScreen from '../screens/user/HistorialScreen';
+import MissionDetailScreen from '../screens/user/MissionDetailScreen';
+import MissionSubmissionScreen from '../screens/user/MissionSubmissionScreen';
+import BenefitDetailScreen from '../screens/user/BenefitDetailScreen';
+import QRCodeScreen from '../screens/user/QRCodeScreen';
 import { COLORS, SPACING } from '../theme/theme';
+
+const Stack = createNativeStackNavigator();
 
 const Tab = createBottomTabNavigator();
 const isWeb = Platform.OS === 'web';
@@ -113,6 +120,78 @@ function WebLayout() {
 }
 
 // ============================================================================
+// COMPONENTE: Stack para Misiones
+// ============================================================================
+function EarnStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: COLORS.primary,
+        },
+        headerTintColor: COLORS.white,
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="EarnMain"
+        component={EarnScreen}
+        options={{ title: 'Gana Puntos' }}
+      />
+      <Stack.Screen
+        name="MissionDetail"
+        component={MissionDetailScreen}
+        options={{ title: 'Detalles de Misión' }}
+      />
+      <Stack.Screen
+        name="MissionSubmission"
+        component={MissionSubmissionScreen}
+        options={{ title: 'Enviar Evidencia' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// ============================================================================
+// COMPONENTE: Stack para Beneficios
+// ============================================================================
+function BenefitsStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: COLORS.primary,
+        },
+        headerTintColor: COLORS.white,
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="BenefitsMain"
+        component={BenefitsScreen}
+        options={{ title: 'Beneficios' }}
+      />
+      <Stack.Screen
+        name="BenefitDetail"
+        component={BenefitDetailScreen}
+        options={{ title: 'Detalles del Beneficio' }}
+      />
+      <Stack.Screen
+        name="QRCode"
+        component={QRCodeScreen}
+        options={{ title: 'Código QR' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// ============================================================================
 // COMPONENTE: Mobile Layout (Bottom Tabs)
 // ============================================================================
 function MobileLayout() {
@@ -160,13 +239,13 @@ function MobileLayout() {
       />
       <Tab.Screen
         name="Benefits"
-        component={BenefitsScreen}
-        options={{ title: 'Beneficios' }}
+        component={BenefitsStack}
+        options={{ headerShown: false, title: 'Beneficios' }}
       />
       <Tab.Screen
         name="Earn"
-        component={EarnScreen}
-        options={{ title: 'Gana Puntos' }}
+        component={EarnStack}
+        options={{ headerShown: false, title: 'Gana Puntos' }}
       />
       <Tab.Screen
         name="Profile"

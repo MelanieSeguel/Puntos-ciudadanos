@@ -10,22 +10,26 @@ import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
 
 export default function EarnScreen() {
-  const ways = [
-    { id: '1', icon: 'shopping', title: 'Comprar', description: 'Gana puntos por cada compra', points: '1 pt = $1' },
-    { id: '2', icon: 'account-plus', title: 'Referir', description: 'Invita amigos y gana', points: '+50 pts' },
-    { id: '3', icon: 'star', title: 'Reseña', description: 'Deja una reseña y gana', points: '+25 pts' },
-    { id: '4', icon: 'gift', title: 'Promociones', description: 'Aprovecha ofertas especiales', points: '2x pts' },
-  ];
+  const [missions, setMissions] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
 
-  const renderWay = ({ item }) => (
+  // Por hacer: conectar a GET /api/v1/missions
+  // useEffect(() => {
+  //   missionsAPI.getAvailable().then(res => {
+  //     setMissions(res.data.data);
+  //     setLoading(false);
+  //   });
+  // }, []);
+
+  const renderMission = ({ item }) => (
     <TouchableOpacity style={styles.card}>
-      <MaterialCommunityIcons name={item.icon} size={32} color={COLORS.primary} style={styles.icon} />
+      <MaterialCommunityIcons name="target" size={32} color={COLORS.primary} style={styles.icon} />
       <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
+        <Text style={styles.cardTitle}>{item.name || item.title}</Text>
         <Text style={styles.cardDescription}>{item.description}</Text>
       </View>
       <View style={styles.pointsBadge}>
-        <Text style={styles.pointsText}>{item.points}</Text>
+        <Text style={styles.pointsText}>+{item.points} pts</Text>
       </View>
     </TouchableOpacity>
   );
@@ -38,12 +42,13 @@ export default function EarnScreen() {
       </View>
 
       <FlatList
-        data={ways}
-        renderItem={renderWay}
+        data={missions}
+        renderItem={renderMission}
         keyExtractor={(item) => item.id}
         scrollEnabled={false}
         style={styles.list}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={<Text style={styles.emptyText}>Cargando misiones...</Text>}
       />
 
       <View style={styles.info}>
@@ -108,6 +113,12 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.caption,
     color: COLORS.white,
     fontWeight: '600',
+  },
+  emptyText: {
+    fontSize: TYPOGRAPHY.body1,
+    color: COLORS.gray,
+    textAlign: 'center',
+    marginTop: SPACING.xl,
   },
   info: {
     backgroundColor: COLORS.white,
