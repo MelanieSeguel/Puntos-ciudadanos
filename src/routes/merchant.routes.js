@@ -1,16 +1,27 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.js';
 import { isMerchantOrAdmin } from '../middlewares/authorize.js';
+import * as merchantController from '../controllers/merchant.controller.js';
 import prisma from '../config/database.js';
-import * as pointsService from '../services/points.service.js';
 
 const router = Router();
 
 /**
- * POST /api/v1/merchant/validate-qr
- * El comercio escanea el QR del cliente (que contiene el transactionId)
+ * POST /api/v1/merchant/redeem
+ * El comercio escanea el QR del cliente y procesa el canje
  * Solo comercios y admins
- * REFACTORIZADO: Usa la lógica centralizada del servicio
+ */
+router.post(
+  '/redeem',
+  authenticate,
+  isMerchantOrAdmin,
+  merchantController.redeemQRCode
+);
+
+/**
+ * POST /api/v1/merchant/validate-qr
+ * DEPRECATED - Usar /redeem en su lugar
+ * Mantenido por compatibilidad
  */
 router.post(
   '/validate-qr',
@@ -18,33 +29,20 @@ router.post(
   isMerchantOrAdmin,
   async (req, res) => {
     try {
-      const { transactionId } = req.body;
+      const { qrCode } = req.body;
       const merchantId = req.user.id;
 
-      if (!transactionId) {
+      if (!qrCode) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Falta el ID del cupón' 
+          message: 'Falta el código QR' 
         });
       }
 
-      // Usamos la lógica centralizada del servicio
-      const result = await pointsService.validateRedemption(transactionId, merchantId);
-
-      res.json({
-        success: true,
-        message: 'Cupón validado exitosamente',
-        data: {
-          beneficio: result.benefit.title,
-          cliente: result.user.name,
-          fecha: new Date().toISOString(),
-          puntosUsados: result.transaction.amount,
-          comercio: req.user.name
-        }
-      });
+      // Usar la nueva función redeemQRCode del controlador
+      const result = await merchantController.redeemQRCode({ body: { qrCode }, user: { id: merchantId } }, res);
 
     } catch (error) {
-      // Manejo de errores estándar usando los errores del servicio
       const status = error.statusCode || 500;
       res.status(status).json({ 
         success: false, 
@@ -64,30 +62,30 @@ router.get(
   isMerchantOrAdmin,
   async (req, res) => {
     try {
-      // Contar cupones validados por este comercio
-      const validatedCount = await prisma.pointTransaction.count({
+      // Contar QRs validados por este comercio
+      const validatedCount = await prisma.benefitRedemption.count({
         where: {
-          metadata: {
-            path: ['validatedBy'],
-            equals: req.user.id
-          }
+          scannedByMerchantId: req.user.id,
+          status: 'REDEEMED'
         }
       });
 
-      // Sumar puntos totales de cupones validados
-      const transactions = await prisma.pointTransaction.findMany({
+      // Obtener detalles de los canjes
+      const redemptions = await prisma.benefitRedemption.findMany({
         where: {
-          metadata: {
-            path: ['validatedBy'],
-            equals: req.user.id
-          }
+          scannedByMerchantId: req.user.id,
+          status: 'REDEEMED'
         },
-        select: {
-          amount: true
+        include: {
+          benefit: {
+            select: {
+              pointsCost: true
+            }
+          }
         }
       });
 
-      const totalPuntos = transactions.reduce((sum, t) => sum + t.amount, 0);
+      const totalPuntos = redemptions.reduce((sum, r) => sum + r.benefit.pointsCost, 0);
 
       res.json({
         success: true,

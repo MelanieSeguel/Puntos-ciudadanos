@@ -43,7 +43,7 @@ export async function createSubmission(data) {
     }
 
     // ========================================
-    // LÓGICA DE COOLDOWN
+    // LÓGICA DE COOLDOWN - MEJORADA CON MissionCompletion
     // ========================================
     // Determinar el cooldown en días (si no está explícitamente configurado, usar frequency)
     let cooldownDays = mission.cooldownDays;
@@ -51,35 +51,35 @@ export async function createSubmission(data) {
     if (cooldownDays === 0 && mission.frequency) {
       // Convertir frequency en días
       const frequencyMap = {
+        'ONCE': 999999, // No puede repetir
         'DAILY': 1,
         'WEEKLY': 7,
-        'BIWEEKLY': 14,
         'MONTHLY': 30,
         'QUARTERLY': 90,
         'YEARLY': 365,
+        'ELECTION_PERIOD': 1460, // 4 años (ciclo presidencial)
       };
       cooldownDays = frequencyMap[mission.frequency] || 0;
     }
 
     if (cooldownDays > 0) {
-      // Buscar la última aprobación de esta misión por este usuario
-      const lastApproved = await prisma.missionSubmission.findFirst({
+      // Buscar la última completación de esta misión por este usuario
+      const lastCompletion = await prisma.missionCompletion.findFirst({
         where: {
           userId,
           missionId,
-          status: 'APPROVED',
         },
         orderBy: {
-          validatedAt: 'desc',
+          completedAt: 'desc',
         },
       });
 
-      if (lastApproved && lastApproved.validatedAt) {
-        // Calcular cuántos días han pasado desde la última aprobación
+      if (lastCompletion) {
+        // Calcular cuántos días han pasado desde la última completación
         const now = new Date();
-        const lastApprovedDate = new Date(lastApproved.validatedAt);
+        const lastCompletionDate = new Date(lastCompletion.completedAt);
         const daysPassed = Math.floor(
-          (now.getTime() - lastApprovedDate.getTime()) / (1000 * 60 * 60 * 24)
+          (now.getTime() - lastCompletionDate.getTime()) / (1000 * 60 * 60 * 24)
         );
 
         // Si no han pasado suficientes días, bloquear el envío
@@ -249,6 +249,15 @@ export async function approveSubmission(submissionId, adminId, observation = nul
         },
       });
 
+      // Registrar la completación de la misión (para validar cooldown)
+      const missionCompletion = await tx.missionCompletion.create({
+        data: {
+          userId: submission.userId,
+          missionId: submission.missionId,
+          completedAt: new Date(),
+        },
+      });
+
       // Agregar puntos a la billetera
       const updatedWallet = await tx.wallet.update({
         where: { id: wallet.id },
@@ -281,12 +290,14 @@ export async function approveSubmission(submissionId, adminId, observation = nul
             userId: submission.userId,
             missionId: submission.missionId,
             pointsAwarded: submission.mission.points,
+            completionId: missionCompletion.id,
           },
         },
       });
 
       return {
         submission: updatedSubmission,
+        completion: missionCompletion,
         wallet: updatedWallet,
         transaction,
       };

@@ -76,6 +76,12 @@ export const redeemBenefit = asyncHandler(async (req, res) => {
         pointsCost: result.benefit.pointsCost,
         remainingStock: result.benefit.stock
       },
+      redemption: {
+        id: result.redemption.id,
+        qrCode: result.redemption.qrCode,
+        status: result.redemption.status,
+        expiresAt: result.redemption.expiresAt,
+      },
       transaction: {
         id: result.transaction.id,
         type: result.transaction.type,
@@ -83,13 +89,7 @@ export const redeemBenefit = asyncHandler(async (req, res) => {
         description: result.transaction.description,
         createdAt: result.transaction.createdAt
       },
-      coupon: {
-        transactionId: result.transaction.id,
-        qrData: result.transaction.id,
-        status: 'PENDING',
-        instructions: 'Muestra este código al comercio para canjear tu beneficio',
-        expiresAt: result.transaction.metadata?.expiresAt,
-      }
+      instructions: 'Muestra el código QR al comercio para canjear tu beneficio'
     },
     'Beneficio canjeado exitosamente. Muestra el QR al comercio',
     200

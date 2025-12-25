@@ -50,6 +50,20 @@ enum FrequencyType {
   ELECTION_PERIOD // Válida solo durante periodos electorales
 }
 
+enum RedemptionStatus {
+  PENDING   // QR generado, esperando ser escaneado
+  REDEEMED  // Ya fue escaneado y validado por el comerciante
+  EXPIRED   // Pasó el tiempo límite de validez
+  CANCELLED // Usuario canceló el canje
+}
+
+enum EvidenceType {
+  PHOTO       // Fotografía como evidencia
+  DOCUMENT    // Documento oficial
+  CERTIFICATE // Certificado
+  RECEIPT     // Recibo o comprobante
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -62,7 +76,9 @@ model User {
   passwordHash      String           @map("password_hash") @db.VarChar(255)
   role              UserRole         @default(USER)
   status            UserStatus       @default(ACTIVE)
+  emailVerified     Boolean          @default(false) @map("email_verified")
   mustChangePassword Boolean         @default(false)
+  lastLoginAt       DateTime?        @map("last_login_at") @db.Timestamptz(3)
   
   // Timestamps
   registeredAt      DateTime         @default(now()) @map("fecha_registro") @db.Timestamptz(3)
@@ -73,9 +89,12 @@ model User {
   wallet            Wallet?          // Billetera: relación 1:1
   merchantProfile   MerchantProfile? // Perfil de comerciante (si es comerciante)
   missionSubmissions MissionSubmission[] // Misiones enviadas por el usuario
+  missionCompletions MissionCompletion[] // Registro de misiones completadas
   validatedSubmissions MissionSubmission[] @relation("AdminValidations") // Aprobaciones hechas por este admin
   adminLogs         AdminLog[]       // Decisiones administrativas que ha tomado
   benefitsOwned     Benefit[]        // Beneficios que posee como comerciante
+  redemptions       BenefitRedemption[] // Beneficios que ha canjeado
+  merchantScans     BenefitRedemption[] @relation("MerchantScans") // Canjes que este comerciante escaneó
   
   @@index([email])
   @@index([role])
@@ -136,6 +155,7 @@ model Benefit {
   description      String?            @db.Text
   pointsCost       Int
   stock            Int                @default(0)
+  reservedStock    Int                @default(0) @map("reserved_stock")
   imageUrl         String?            @db.VarChar(500)
   active           Boolean            @default(true)
   category         String?            @db.VarChar(100)
@@ -149,6 +169,7 @@ model Benefit {
   // Relaciones
   merchant         User               @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   transactions     PointTransaction[]
+  redemptions      BenefitRedemption[]
   
   @@index([merchantId])
   @@index([active])
@@ -183,15 +204,16 @@ model Mission {
   points        Int
   frequency     FrequencyType
   cooldownDays  Int            @default(0)
-  evidenceType  String         @db.VarChar(50)
+  evidenceType  EvidenceType   @default(PHOTO)
   active        Boolean        @default(true)
   
   // Timestamps
   createdAt     DateTime       @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
   
   // Relaciones
   submissions   MissionSubmission[]
+  completions   MissionCompletion[]
   
   @@index([active])
   @@index([frequency])
@@ -244,4 +266,56 @@ model AdminLog {
   @@index([targetId])
   @@index([createdAt])
   @@map("admin_logs")
+}
+
+/// Registro de misiones completadas por usuario (para validar frecuencia)
+model MissionCompletion {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  missionId     String   @map("mission_id")
+  
+  // Timestamps
+  completedAt   DateTime @default(now()) @map("completed_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission       Mission  @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, missionId, completedAt])
+  @@index([userId])
+  @@index([missionId])
+  @@index([completedAt])
+  @@map("mission_completions")
+}
+
+/// Canjes de beneficios (QR generado para el usuario, validado por el comerciante)
+model BenefitRedemption {
+  id             String             @id @default(uuid())
+  userId         String             @map("user_id")
+  benefitId      String             @map("benefit_id")
+  qrCode         String             @unique @db.VarChar(255) @map("qr_code") // Código único para escanear
+  status         RedemptionStatus   @default(PENDING)
+  
+  // Validación por comerciante
+  scannedByMerchantId String?        @map("scanned_by_merchant_id") // Qué comerciante lo escaneó
+  scannedAt      DateTime?          @map("scanned_at") @db.Timestamptz(3)
+  
+  // Expiración
+  expiresAt      DateTime           @map("expires_at") @db.Timestamptz(3)
+  
+  // Timestamps
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  redeemedAt     DateTime?          @map("redeemed_at") @db.Timestamptz(3)
+  
+  // Relaciones
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  benefit        Benefit            @relation(fields: [benefitId], references: [id], onDelete: Cascade)
+  scannedByMerchant User?           @relation("MerchantScans", fields: [scannedByMerchantId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([benefitId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([scannedByMerchantId])
+  @@map("benefit_redemptions")
 }

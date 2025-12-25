@@ -225,7 +225,21 @@ export const redeemBenefit = async (userId, benefitId) => {
         where: { id: wallet.id },
       });
 
-      // C) Crear transacción de canje con metadata para el QR
+      // C) Crear canje de beneficio con QR único
+      const qrCode = `QR-${userId.substring(0, 8)}-${benefitId.substring(0, 8)}-${Date.now()}`;
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 días
+      
+      const redemption = await tx.benefitRedemption.create({
+        data: {
+          userId,
+          benefitId: benefit.id,
+          qrCode,
+          expiresAt,
+          status: 'PENDING',
+        },
+      });
+
+      // D) Crear transacción de canje para auditoría
       const transaction = await tx.pointTransaction.create({
         data: {
           walletId: wallet.id,
@@ -238,14 +252,14 @@ export const redeemBenefit = async (userId, benefitId) => {
             saldoNuevo,
             benefitTitle: benefit.title,
             benefitCategory: benefit.category,
-            status: 'PENDING',
-            generatedAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            redemptionId: redemption.id,
+            qrCode: qrCode,
+            expiresAt: expiresAt.toISOString(),
           },
         },
       });
 
-      // D) Obtener beneficio actualizado para la respuesta
+      // E) Obtener beneficio actualizado para la respuesta
       const finalBenefit = await tx.benefit.findUnique({
         where: { id: benefitId },
       });
@@ -254,6 +268,7 @@ export const redeemBenefit = async (userId, benefitId) => {
         wallet: updatedWallet,
         benefit: finalBenefit,
         transaction,
+        redemption, // Incluir el canje con el QR
       };
     });
 
@@ -271,6 +286,80 @@ export const redeemBenefit = async (userId, benefitId) => {
     // Re-lanzar otros errores
     throw error;
   }
+};
+
+/**
+ * Validar y procesar escaneo de QR por comerciante
+ * @param {string} qrCode - Código QR a validar
+ * @param {string} merchantId - ID del comerciante que escanea
+ * @returns {Promise<{redemption, user, benefit, pointsCharged}>}
+ */
+export const redeemQRCode = async (qrCode, merchantId) => {
+  // 1. Validar que el comerciante existe y es MERCHANT
+  const merchant = await prisma.user.findUnique({
+    where: { id: merchantId },
+  });
+
+  if (!merchant) {
+    throw new NotFoundError('Comerciante no encontrado');
+  }
+
+  if (merchant.role !== 'MERCHANT') {
+    throw new ValidationError('Solo comerciantes pueden validar QR');
+  }
+
+  // 2. Buscar el canje pendiente con este QR
+  const redemption = await prisma.benefitRedemption.findUnique({
+    where: { qrCode },
+    include: {
+      user: true,
+      benefit: true,
+    },
+  });
+
+  if (!redemption) {
+    throw new NotFoundError('Código QR no válido o no encontrado');
+  }
+
+  // 3. Validar estado del canje
+  if (redemption.status !== 'PENDING') {
+    throw new ValidationError(
+      `Este QR ya fue procesado. Estado: ${redemption.status}`
+    );
+  }
+
+  // 4. Validar que no haya expirado
+  if (new Date() > redemption.expiresAt) {
+    throw new ValidationError('Este QR ha expirado');
+  }
+
+  // 5. Validar que el beneficio todavía existe y está activo
+  const benefit = redemption.benefit;
+  if (!benefit.active) {
+    throw new ValidationError('Este beneficio no está disponible');
+  }
+
+  // 6. Actualizar el estado del canje a REDEEMED
+  const updatedRedemption = await prisma.benefitRedemption.update({
+    where: { id: redemption.id },
+    data: {
+      status: 'REDEEMED',
+      scannedByMerchantId: merchantId,
+      scannedAt: new Date(),
+      redeemedAt: new Date(),
+    },
+    include: {
+      user: true,
+      benefit: true,
+    },
+  });
+
+  return {
+    redemption: updatedRedemption,
+    user: updatedRedemption.user,
+    benefit: updatedRedemption.benefit,
+    pointsCharged: benefit.pointsCost,
+  };
 };
 
 /**

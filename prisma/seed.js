@@ -7,14 +7,42 @@ async function main() {
   console.log('Iniciando seed de la base de datos...');
 
   try {
-    // Limpiar datos existentes (sin incluir tablas que no existen en todas las versiones)
+    // Limpiar datos existentes en orden correcto (respetando foreign keys)
+    // Primero: modelos que dependen de otros
+    try {
+      await prisma.benefitRedemption.deleteMany();
+    } catch (e) {
+      // Tabla no existe aún
+    }
+    try {
+      await prisma.missionCompletion.deleteMany();
+    } catch (e) {
+      // Tabla no existe aún
+    }
     try {
       await prisma.pointTransaction.deleteMany();
     } catch (e) {
       // Tabla no existe aún
     }
+    
+    // Luego: modelos independientes
+    try {
+      await prisma.missionSubmission.deleteMany();
+    } catch (e) {
+      // Tabla no existe aún
+    }
+    try {
+      await prisma.mission.deleteMany();
+    } catch (e) {
+      // Tabla no existe aún
+    }
     try {
       await prisma.benefit.deleteMany();
+    } catch (e) {
+      // Tabla no existe aún
+    }
+    try {
+      await prisma.merchantProfile.deleteMany();
     } catch (e) {
       // Tabla no existe aún
     }
@@ -29,7 +57,7 @@ async function main() {
       // Tabla no existe aún
     }
     
-    console.log('Datos anteriores eliminados (según disponibilidad de tablas)');
+    console.log('Datos anteriores eliminados correctamente');
 
     // ============================================
     // CREAR USUARIOS
