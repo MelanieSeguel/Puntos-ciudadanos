@@ -76,27 +76,18 @@ export default function HistorialScreen() {
           <Text style={styles.title}>Historial de Actividades</Text>
           <Text style={styles.subtitle}>Todas tus transacciones de puntos</Text>
         </View>
-
         <View style={styles.listContainer}>
           {historial.map((item) => (
             <View key={item.id} style={styles.historialItem}>
               <View style={[styles.itemIcon, { backgroundColor: item.color + '20' }]}>
-                <MaterialCommunityIcons
-                  name={item.icon}
-                  size={20}
-                  color={item.color}
-                />
+                <MaterialCommunityIcons name={item.icon} size={20} color={item.color} />
               </View>
-
               <View style={styles.itemContent}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
                 <Text style={styles.itemDescription}>{item.description}</Text>
                 <Text style={styles.itemDate}>{item.date}</Text>
               </View>
-
-              <Text style={[styles.itemPoints, { color: item.color }]}>
-                {item.points}
-              </Text>
+              <Text style={[styles.itemPoints, { color: item.color }]}>{item.points}</Text>
             </View>
           ))}
         </View>

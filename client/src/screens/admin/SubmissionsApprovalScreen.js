@@ -14,67 +14,56 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Modal,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
+import { adminAPI } from '../../services/api';
 
 export default function SubmissionsApprovalScreen({ navigation }) {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('PENDING'); // PENDING, APPROVED, REJECTED
+  
+  // Modal de confirmación
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // { type: 'approve'|'reject', submissionId, reason? }
 
   useFocusEffect(
     useCallback(() => {
       loadSubmissions();
     }, [filter])
   );
-
   const loadSubmissions = async () => {
     try {
       setLoading(true);
-      // Por hacer: conectar a GET /api/v1/admin/submissions?status={filter}
-      // const response = await adminAPI.getSubmissions(filter);
-      // setSubmissions(response.data.data);
+      const response = await adminAPI.getSubmissions(filter);
       
-      // Datos iniciales para interfaz
-      setSubmissions([
-        {
-          id: 'sub_001',
-          userId: 'user_001',
-          userName: 'María García',
-          userAvatar: null,
-          missionId: 'mission_001',
-          missionName: 'Reciclaje de Plásticos',
-          description: 'Reciclé 5kg de plástico en el punto de acopio municipal.',
-          status: 'PENDING',
-          attachments: 3,
-          submittedAt: new Date(Date.now() - 2 * 60 * 60000),
-          points: 50,
-        },
-        {
-          id: 'sub_002',
-          userId: 'user_002',
-          userName: 'Juan López',
-          userAvatar: null,
-          missionId: 'mission_002',
-          missionName: 'Plantación de Árboles',
-          description: 'Planté 3 árboles en el parque comunitario.',
-          status: 'PENDING',
-          attachments: 2,
-          submittedAt: new Date(Date.now() - 5 * 60 * 60000),
-          points: 75,
-        },
-      ]);
+      // Mapear respuesta a formato compatible con la pantalla
+      const formattedSubmissions = (response.data.data.submissions || []).map(sub => ({
+        id: sub.id,
+        userId: sub.userId,
+        userName: sub.user?.name || 'Usuario desconocido',
+        userEmail: sub.user?.email || 'sin email',
+        missionId: sub.missionId,
+        missionName: sub.mission?.name || 'Misión desconocida',
+        evidenceUrl: sub.evidenceUrl,
+        observation: sub.observation || '',
+        status: sub.status,
+        submittedAt: sub.createdAt,
+        points: sub.mission?.points || 0,
+      }));
+      
+      setSubmissions(formattedSubmissions);
     } catch (error) {
-      console.error('Error loading submissions:', error);
+      Alert.alert('Error', 'No pudimos cargar los envíos pendientes');
     } finally {
       setLoading(false);
     }
   };
-
   const onRefresh = async () => {
     setRefreshing(true);
     await loadSubmissions();
@@ -82,139 +71,156 @@ export default function SubmissionsApprovalScreen({ navigation }) {
   };
 
   const handleApprove = (submissionId) => {
-    Alert.alert(
-      'Aprobar Envío',
-      '¿Estás seguro de que deseas aprobar este envío?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Aprobar',
-          style: 'default',
-          onPress: async () => {
-            try {
-              // Por hacer: conectar a POST /api/v1/admin/submissions/{id}/approve
-              // await adminAPI.approveSubmission(submissionId);
-              await new Promise(r => setTimeout(r, 800));
-              
-              setSubmissions(submissions.filter(s => s.id !== submissionId));
-              alert('Envío aprobado y puntos otorgados');
-            } catch (error) {
-              alert('Error al aprobar: ' + error.message);
-            }
-          },
-        },
-      ]
-    );
+    setPendingAction({ type: 'approve', submissionId });
+    setShowConfirmModal(true);
   };
 
   const handleReject = (submissionId) => {
-    Alert.alert(
-      'Rechazar Envío',
-      '¿Por qué rechazas este envío?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Evidencia insuficiente',
-          style: 'destructive',
-          onPress: () => rejectSubmission(submissionId, 'INSUFFICIENT_EVIDENCE'),
-        },
-        {
-          text: 'Incumplimiento de reglas',
-          style: 'destructive',
-          onPress: () => rejectSubmission(submissionId, 'RULE_VIOLATION'),
-        },
-      ]
-    );
+    setPendingAction({ type: 'reject', submissionId });
+    setShowConfirmModal(true);
   };
 
-  const rejectSubmission = async (submissionId, reason) => {
+  const confirmAction = async () => {
+    if (!pendingAction) return;
+    
+    setShowConfirmModal(false);
+    
+    if (pendingAction.type === 'approve') {
+      await approveSubmissionDirectly(pendingAction.submissionId);
+    } else if (pendingAction.type === 'reject') {
+      await rejectSubmissionDirectly(pendingAction.submissionId, pendingAction.reason || 'Rechazado por el administrador');
+    }
+    
+    setPendingAction(null);
+  };
+
+  const cancelAction = () => {
+    setShowConfirmModal(false);
+    setPendingAction(null);
+  };
+
+  const approveSubmissionDirectly = async (submissionId) => {
     try {
-      // Por hacer: conectar a POST /api/v1/admin/submissions/{id}/reject
-      // await adminAPI.rejectSubmission(submissionId, { reason });
-      await new Promise(r => setTimeout(r, 800));
+      const response = await adminAPI.approveSubmission(submissionId, null);
       
       setSubmissions(submissions.filter(s => s.id !== submissionId));
-      alert('Envío rechazado');
+      Alert.alert('Éxito', 'Envío aprobado y puntos otorgados');
+      
+      // Recargar la lista
+      setTimeout(() => {
+        loadSubmissions();
+      }, 500);
     } catch (error) {
-      alert('Error al rechazar: ' + error.message);
+      Alert.alert('Error', error.response?.data?.data?.message || error.response?.data?.message || error.message || 'Error al aprobar');
+    }
+  };
+
+  const rejectSubmissionDirectly = async (submissionId, reason) => {
+    try {
+      await adminAPI.rejectSubmission(submissionId, reason);
+      setSubmissions(submissions.filter(s => s.id !== submissionId));
+      Alert.alert('Éxito', 'Envío rechazado');
+      await loadSubmissions();
+    } catch (error) {
+      Alert.alert('Error', error.response?.data?.data?.message || error.response?.data?.message || 'Error al rechazar');
     }
   };
 
   const renderSubmissionCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() =>
-        navigation.navigate('SubmissionDetail', {
-          submissionId: item.id,
-          submission: item,
-        })
-      }
-    >
-      {/* Usuario */}
-      <View style={styles.userSection}>
-        <View style={styles.avatar}>
-          {item.userAvatar ? (
-            <Image source={{ uri: item.userAvatar }} style={styles.avatarImage} />
-          ) : (
+    <View style={styles.card}>
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate('SubmissionDetail', {
+            submissionId: item.id,
+            submission: item,
+          })
+        }
+      >
+        <View style={styles.userSection}>
+          <View style={styles.avatar}>
             <MaterialCommunityIcons name="account" size={24} color={COLORS.primary} />
-          )}
-        </View>
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.userName}</Text>
-          <Text style={styles.userEmail}>ID: {item.userId}</Text>
-        </View>
-        <View style={[styles.badge, { backgroundColor: '#fff3cd' }]}>
-          <Text style={styles.badgeText}>Pendiente</Text>
-        </View>
-      </View>
-
-      {/* Misión */}
-      <View style={styles.missionSection}>
-        <View style={styles.missionHeader}>
-          <MaterialCommunityIcons name="target" size={20} color={COLORS.primary} />
-          <View style={styles.missionDetails}>
-            <Text style={styles.missionName}>{item.missionName}</Text>
-            <Text style={styles.points}>+{item.points} puntos</Text>
+          </View>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{item.userName}</Text>
+            <Text style={styles.userEmail}>{item.userEmail}</Text>
+          </View>
+          <View style={[styles.badge, { 
+            backgroundColor: item.status === 'PENDING' ? '#fff3cd' : item.status === 'APPROVED' ? '#d4edda' : '#f8d7da' 
+          }]}>
+            <Text style={styles.badgeText}>
+              {item.status === 'PENDING' ? 'Pendiente' : item.status === 'APPROVED' ? 'Aprobado' : 'Rechazado'}
+            </Text>
           </View>
         </View>
-      </View>
-
-      {/* Descripción */}
-      <View style={styles.descriptionSection}>
-        <Text style={styles.description} numberOfLines={2}>
-          {item.description}
-        </Text>
-      </View>
-
-      {/* Attachments */}
-      <View style={styles.attachmentsInfo}>
-        <MaterialCommunityIcons name="file-multiple" size={16} color={COLORS.gray} />
-        <Text style={styles.attachmentsCount}>
-          {item.attachments} archivo(s) adjuntado(s)
-        </Text>
-        <Text style={styles.submittedTime}>
-          {Math.round((Date.now() - item.submittedAt) / 60000)} min atrás
-        </Text>
-      </View>
-
-      {/* Acciones */}
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.rejectButton]}
-          onPress={() => handleReject(item.id)}
-        >
-          <MaterialCommunityIcons name="close-circle" size={18} color={COLORS.danger} />
-          <Text style={styles.rejectButtonText}>Rechazar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.approveButton]}
-          onPress={() => handleApprove(item.id)}
-        >
-          <MaterialCommunityIcons name="check-circle" size={18} color={COLORS.white} />
-          <Text style={styles.approveButtonText}>Aprobar</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+        <View style={styles.missionSection}>
+          <View style={styles.missionHeader}>
+            <MaterialCommunityIcons name="target" size={20} color={COLORS.primary} />
+            <View style={styles.missionDetails}>
+              <Text style={styles.missionName}>{item.missionName}</Text>
+              <Text style={styles.points}>+{item.points} puntos</Text>
+            </View>
+          </View>
+        </View>
+        {item.observation && (
+          <View style={styles.descriptionSection}>
+            <Text style={styles.description} numberOfLines={2}>
+              {item.observation}
+            </Text>
+          </View>
+        )}
+        <View style={styles.attachmentsInfo}>
+          <MaterialCommunityIcons name="file-image" size={16} color={COLORS.gray} />
+          <Text style={styles.attachmentsCount}>
+            Evidencia adjunta
+          </Text>
+          <Text style={styles.submittedTime}>
+            {(() => {
+              const diffMs = Date.now() - new Date(item.submittedAt).getTime();
+              const diffMins = Math.round(diffMs / 60000);
+              const diffHours = Math.round(diffMs / 3600000);
+              const diffDays = Math.round(diffMs / 86400000);
+              
+              if (diffMins < 60) return `${diffMins} min atrás`;
+              if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hora' : 'horas'} atrás`;
+              return `${diffDays} ${diffDays === 1 ? 'día' : 'días'} atrás`;
+            })()}
+          </Text>
+        </View>
+      </TouchableOpacity>
+      {item.status === 'PENDING' ? (
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.rejectButton]}
+            onPress={() => handleReject(item.id)}
+          >
+            <MaterialCommunityIcons name="close-circle" size={18} color={COLORS.error} />
+            <Text style={styles.rejectButtonText}>Rechazar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.approveButton]}
+            onPress={() => handleApprove(item.id)}
+          >
+            <MaterialCommunityIcons name="check-circle" size={18} color={COLORS.white} />
+            <Text style={styles.approveButtonText}>Aprobar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.detailButton]}
+            onPress={() =>
+              navigation.navigate('SubmissionDetail', {
+                submissionId: item.id,
+                submission: item,
+              })
+            }
+          >
+            <MaterialCommunityIcons name="eye" size={18} color={COLORS.white} />
+            <Text style={styles.approveButtonText}>Ver Detalle</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 
   if (loading) {
@@ -229,15 +235,12 @@ export default function SubmissionsApprovalScreen({ navigation }) {
 
   return (
     <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Aprobaciones Pendientes</Text>
         <View style={styles.badge}>
           <Text style={styles.badgeNumber}>{submissions.length}</Text>
         </View>
       </View>
-
-      {/* Filtros */}
       <View style={styles.filters}>
         {['PENDING', 'APPROVED', 'REJECTED'].map(status => (
           <TouchableOpacity
@@ -248,40 +251,35 @@ export default function SubmissionsApprovalScreen({ navigation }) {
             ]}
             onPress={() => setFilter(status)}
           >
-            <Text
-              style={[
+            <Text style={[
                 styles.filterButtonText,
                 filter === status && styles.filterButtonTextActive,
-              ]}
-            >
-              {status === 'PENDING'
-                ? 'Pendientes'
-                : status === 'APPROVED'
-                ? 'Aprobados'
-                : 'Rechazados'}
+              ]}>
+              {status === 'PENDING' ? 'Pendientes' : status === 'APPROVED' ? 'Aprobados' : 'Rechazados'}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
-
-      {/* Lista */}
-      <FlatList
-        data={submissions}
-        renderItem={renderSubmissionCard}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons
-              name="inbox-multiple"
-              size={48}
-              color={COLORS.light}
-            />
-            <Text style={styles.emptyText}>No hay envíos pendientes</Text>
+      <FlatList data={submissions} renderItem={renderSubmissionCard} keyExtractor={item => item.id} contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} ListEmptyComponent={<View style={styles.emptyContainer}><MaterialCommunityIcons name="inbox-multiple" size={48} color={COLORS.light} /><Text style={styles.emptyText}>No hay envíos pendientes</Text></View>} />
+      <Modal visible={showConfirmModal} transparent={true} animationType="fade" onRequestClose={cancelAction}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <MaterialCommunityIcons name={pendingAction?.type === 'approve' ? 'check-circle' : 'alert-circle'} size={48} color={pendingAction?.type === 'approve' ? COLORS.primary : COLORS.error} />
+            </View>
+            <Text style={styles.modalTitle}>{pendingAction?.type === 'approve' ? '¿Aprobar Envío?' : '¿Rechazar Envío?'}</Text>
+            <Text style={styles.modalMessage}>{pendingAction?.type === 'approve' ? 'El usuario recibirá los puntos asociados a esta misión.' : 'El usuario será notificado del rechazo.'}</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={[styles.modalButton, styles.modalCancelButton]} onPress={cancelAction}>
+                <Text style={styles.modalCancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalButton, pendingAction?.type === 'approve' ? styles.modalConfirmButton : styles.modalRejectButton]} onPress={confirmAction}>
+                <Text style={[styles.modalConfirmButtonText, pendingAction?.type === 'reject' && styles.modalRejectButtonText]}>{pendingAction?.type === 'approve' ? 'Aprobar' : 'Rechazar'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        }
-      />
+        </View>
+      </Modal>
     </ScreenWrapper>
   );
 }
@@ -470,6 +468,9 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.caption,
     fontWeight: '600',
   },
+  detailButton: {
+    backgroundColor: COLORS.primary,
+  },
   rejectButton: {
     borderWidth: 1,
     borderColor: COLORS.danger,
@@ -488,5 +489,78 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.body2,
     color: COLORS.gray,
     marginTop: SPACING.md,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.md,
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: LAYOUT.borderRadius.lg,
+    padding: SPACING.lg,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+    ...LAYOUT.shadowLarge,
+  },
+  modalHeader: {
+    marginBottom: SPACING.md,
+  },
+  modalTitle: {
+    fontSize: TYPOGRAPHY.h3,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: TYPOGRAPHY.body2,
+    color: COLORS.gray,
+    textAlign: 'center',
+    marginBottom: SPACING.lg,
+    lineHeight: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderRadius: LAYOUT.borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCancelButton: {
+    backgroundColor: COLORS.light,
+    borderWidth: 1,
+    borderColor: COLORS.gray,
+  },
+  modalCancelButtonText: {
+    color: COLORS.gray,
+    fontSize: TYPOGRAPHY.body2,
+    fontWeight: '600',
+  },
+  modalConfirmButton: {
+    backgroundColor: COLORS.success,
+  },
+  modalRejectButton: {
+    backgroundColor: COLORS.error,
+  },
+  modalConfirmButtonText: {
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.body2,
+    fontWeight: '600',
+  },
+  modalRejectButtonText: {
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.body2,
+    fontWeight: '600',
   },
 });

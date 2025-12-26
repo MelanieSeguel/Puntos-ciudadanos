@@ -33,7 +33,7 @@ export const authorize = (...allowedRoles) => {
 /**
  * Middleware para verificar que el usuario es administrador
  */
-export const isAdmin = authorize('ADMIN');
+export const isAdmin = authorize('MASTER_ADMIN', 'SUPPORT_ADMIN');
 
 /**
  * Middleware para verificar que el usuario es un comercio
@@ -43,7 +43,7 @@ export const isMerchant = authorize('MERCHANT');
 /**
  * Middleware para verificar que el usuario es comercio o admin
  */
-export const isMerchantOrAdmin = authorize('MERCHANT', 'ADMIN');
+export const isMerchantOrAdmin = authorize('MERCHANT', 'MASTER_ADMIN', 'SUPPORT_ADMIN');
 
 /**
  * Middleware para verificar que el usuario es el propietario del recurso

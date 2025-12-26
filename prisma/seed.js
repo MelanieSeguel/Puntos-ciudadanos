@@ -149,6 +149,59 @@ async function main() {
     console.log('Comercio de prueba creado (Mati Mechada)');
 
     // ============================================
+    // CREAR MISIONES
+    // ============================================
+
+    const missions = await Promise.all([
+      prisma.mission.create({
+        data: {
+          name: 'Votar en Elecciones',
+          description: 'Participa activamente en el proceso electoral votando en las próximas elecciones presidenciales',
+          points: 100,
+          frequency: 'ELECTION_PERIOD',
+          cooldownDays: 1460,
+          evidenceType: 'DOCUMENT',
+          active: true,
+        },
+      }),
+      prisma.mission.create({
+        data: {
+          name: 'Recoger Basura',
+          description: 'Recoge y dispone correctamente al menos 5kg de basura de espacios públicos',
+          points: 50,
+          frequency: 'WEEKLY',
+          cooldownDays: 7,
+          evidenceType: 'PHOTO',
+          active: true,
+        },
+      }),
+      prisma.mission.create({
+        data: {
+          name: 'Reportar Problema Público',
+          description: 'Reporta un problema de infraestructura o servicio público y da seguimiento',
+          points: 30,
+          frequency: 'DAILY',
+          cooldownDays: 1,
+          evidenceType: 'PHOTO',
+          active: true,
+        },
+      }),
+      prisma.mission.create({
+        data: {
+          name: 'Participar en Junta Vecinal',
+          description: 'Asiste y participa activamente en una sesión de la junta vecinal de tu comunidad',
+          points: 75,
+          frequency: 'MONTHLY',
+          cooldownDays: 30,
+          evidenceType: 'CERTIFICATE',
+          active: true,
+        },
+      }),
+    ]);
+
+    console.log('Misiones creadas:', missions.length);
+
+    // ============================================
     // CREAR TRANSACCIONES DE EJEMPLO (PARA UserHomeScreen)
     // ============================================
 
@@ -234,6 +287,7 @@ async function main() {
     console.log('   Usuario 1: maria@example.com / user123');
     console.log('   Usuario 2: juan@example.com / user123');
     console.log('   Comercio: mati@mechada.com / merchant123');
+    console.log('   Misiones: 4 creadas');
     console.log('   Beneficios: 5 creados');
     console.log('   Transacciones: 8 creadas\n');
     

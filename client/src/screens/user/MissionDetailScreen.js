@@ -57,7 +57,6 @@ export default function MissionDetailScreen({ route, navigation }) {
   return (
     <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
       <ScrollView>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.dark} />
@@ -65,8 +64,6 @@ export default function MissionDetailScreen({ route, navigation }) {
           <Text style={styles.title}>Detalles de Misión</Text>
           <View style={{ width: 24 }} />
         </View>
-
-        {/* Misión Card Principal */}
         <View style={styles.heroCard}>
           <View style={styles.iconLarge}>
             <MaterialCommunityIcons
@@ -81,14 +78,10 @@ export default function MissionDetailScreen({ route, navigation }) {
             <Text style={styles.pointsLargeText}>{data.points}</Text>
           </View>
         </View>
-
-        {/* Descripción */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Descripción</Text>
           <Text style={styles.description}>{data.description}</Text>
         </View>
-
-        {/* Badges de Info */}
         <View style={styles.badgesSection}>
           <View style={styles.infoBadge}>
             <MaterialCommunityIcons name="timer" size={20} color={COLORS.info} />
@@ -97,7 +90,6 @@ export default function MissionDetailScreen({ route, navigation }) {
               <Text style={styles.badgeValue}>{data.frequency}</Text>
             </View>
           </View>
-
           <View style={styles.infoBadge}>
             <MaterialCommunityIcons name="lightning-bolt" size={20} color={COLORS.warning} />
             <View>
@@ -105,7 +97,6 @@ export default function MissionDetailScreen({ route, navigation }) {
               <Text style={styles.badgeValue}>Media</Text>
             </View>
           </View>
-
           <View style={styles.infoBadge}>
             <MaterialCommunityIcons name="reload" size={20} color={COLORS.gray} />
             <View>
@@ -114,8 +105,6 @@ export default function MissionDetailScreen({ route, navigation }) {
             </View>
           </View>
         </View>
-
-        {/* Requisitos */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Requisitos</Text>
           {data.requirements.map((req, idx) => (
@@ -125,8 +114,6 @@ export default function MissionDetailScreen({ route, navigation }) {
             </View>
           ))}
         </View>
-
-        {/* Estadísticas */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Estadísticas</Text>
           <View style={styles.statsContainer}>
@@ -146,8 +133,6 @@ export default function MissionDetailScreen({ route, navigation }) {
             </View>
           </View>
         </View>
-
-        {/* Estado del Cooldown */}
         {!canSubmit && (
           <View style={styles.cooldownAlert}>
             <MaterialCommunityIcons
@@ -163,8 +148,6 @@ export default function MissionDetailScreen({ route, navigation }) {
             </View>
           </View>
         )}
-
-        {/* Botón Enviar */}
         <TouchableOpacity
           style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
           onPress={handleSubmitMission}
@@ -181,8 +164,6 @@ export default function MissionDetailScreen({ route, navigation }) {
             </>
           )}
         </TouchableOpacity>
-
-        {/* Espaciado */}
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
     </ScreenWrapper>

@@ -13,13 +13,15 @@ import {
   Platform,
   ActivityIndicator,
   TextInput,
+  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
+import { missionsAPI } from '../../services/api';
 
 export default function MissionSubmissionScreen({ route, navigation }) {
-  const { missionId, missionName } = route.params || {};
+  const { missionId, missionName, missionPoints } = route.params || {};
   
   const [description, setDescription] = useState('');
   const [attachments, setAttachments] = useState([]);
@@ -30,12 +32,28 @@ export default function MissionSubmissionScreen({ route, navigation }) {
     // Por hacer: integrar galería del dispositivo
     // const result = await ImagePicker.launchImageLibraryAsync({...});
     // setAttachments([...attachments, result]);
+    // Por ahora, agregamos una imagen de prueba
+    if (attachments.length < 3) {
+      setAttachments([...attachments, {
+        uri: 'https://via.placeholder.com/300',
+        name: `Evidencia ${attachments.length + 1}.jpg`,
+        type: 'image/jpeg',
+      }]);
+    }
   };
 
   const handleTakePhoto = () => {
     // Por hacer: integrar cámara del dispositivo
     // const result = await ImagePicker.launchCameraAsync({...});
     // setAttachments([...attachments, result]);
+    // Por ahora, agregamos una foto de prueba
+    if (attachments.length < 3) {
+      setAttachments([...attachments, {
+        uri: 'https://via.placeholder.com/300',
+        name: `Foto ${attachments.length + 1}.jpg`,
+        type: 'image/jpeg',
+      }]);
+    }
   };
 
   const handleSubmit = async () => {
@@ -53,21 +71,29 @@ export default function MissionSubmissionScreen({ route, navigation }) {
       setLoading(true);
       setError(null);
       
-      // Por hacer: conectar a POST /api/v1/missions/{missionId}/submit
-      // const formData = new FormData();
-      // formData.append('description', description);
-      // attachments.forEach((file, index) => {
-      //   formData.append(`evidencia_${index}`, file);
-      // });
-      // const response = await missionsAPI.submitEvidence(missionId, formData);
+      // Enviar evidencia a la API
+      // Usando la primera imagen como evidenceUrl o un string de prueba
+      const evidenceUrl = attachments[0]?.uri || 'https://via.placeholder.com/300';
       
-      // Procesando envío
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await missionsAPI.submitEvidence(missionId, evidenceUrl);
       
-      // navigation.goBack();
-      alert('Evidencia enviada para revisión');
+      if (response.data.success) {
+        // Mostrar alert
+        if (Platform.OS === 'web') {
+          window.alert('✅ Éxito - Evidencia enviada para revisión. ¡El admin la revisará pronto!');
+        } else {
+          Alert.alert('Éxito', 'Evidencia enviada para revisión. ¡El admin la revisará pronto!');
+        }
+        // Cerrar modal/pantalla después de 500ms
+        setTimeout(() => {
+          navigation.goBack();
+        }, 500);
+      } else {
+        setError(response.data.message || 'Error al enviar evidencia');
+      }
     } catch (err) {
-      setError(err.message || 'Error al enviar evidencia');
+      console.error('Error enviando evidencia:', err);
+      setError(err.response?.data?.message || err.message || 'Error al enviar evidencia');
     } finally {
       setLoading(false);
     }

@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, StyleSheet, Platform, TouchableOpacity, Text, ScrollView } from 'react-native';
+import { View, StyleSheet, Platform, TouchableOpacity, Text, ScrollView, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -93,6 +93,33 @@ function WebSidebar({ activeTab, onNavigate }) {
 // ============================================================================
 function WebLayout() {
   const [activeTab, setActiveTab] = useState('Home');
+  const [missionSubmissionVisible, setMissionSubmissionVisible] = useState(false);
+  const [missionSubmissionParams, setMissionSubmissionParams] = useState(null);
+
+  const handleMissionPress = (params) => {
+    setMissionSubmissionParams(params);
+    setMissionSubmissionVisible(true);
+  };
+
+  const handleCloseMissionSubmission = () => {
+    setMissionSubmissionVisible(false);
+    setTimeout(() => {
+      setMissionSubmissionParams(null);
+    }, 300);
+  };
+
+  const earnNavigationMock = {
+    navigate: (screen, params) => {
+      if (screen === 'MissionSubmission') {
+        handleMissionPress(params);
+      }
+    },
+    push: (screen, params) => {
+      if (screen === 'MissionSubmission') {
+        handleMissionPress(params);
+      }
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -101,7 +128,7 @@ function WebLayout() {
       case 'Benefits':
         return <BenefitsScreen />;
       case 'Earn':
-        return <EarnScreen />;
+        return <EarnScreen navigation={earnNavigationMock} />;
       case 'Historial':
         return <HistorialScreen />;
       case 'Profile':
@@ -115,6 +142,31 @@ function WebLayout() {
     <View style={styles.webContainer}>
       <WebSidebar activeTab={activeTab} onNavigate={setActiveTab} />
       <View style={styles.webContent}>{renderContent()}</View>
+      
+      {/* Modal para MissionSubmission */}
+      <Modal
+        visible={missionSubmissionVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseMissionSubmission}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.modalClose}
+              onPress={handleCloseMissionSubmission}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+            {missionSubmissionParams && (
+              <MissionSubmissionScreen 
+                route={{ params: missionSubmissionParams }}
+                navigation={{ goBack: handleCloseMissionSubmission }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -137,7 +189,7 @@ function EarnStack() {
       }}
     >
       <Stack.Screen
-        name="EarnMain"
+        name="EarnScreen"
         component={EarnScreen}
         options={{ title: 'Gana Puntos' }}
       />
@@ -383,5 +435,37 @@ const styles = StyleSheet.create({
     width: '80%',
     backgroundColor: COLORS.white,
     overflow: 'auto',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: 600,
+    maxHeight: '90%',
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 20,
+    position: 'relative',
+  },
+  modalClose: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    zIndex: 10,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+  },
+  modalCloseText: {
+    fontSize: 20,
+    color: '#666',
+    fontWeight: 'bold',
   },
 });

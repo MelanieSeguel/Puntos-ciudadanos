@@ -77,7 +77,7 @@ model User {
   role              UserRole         @default(USER)
   status            UserStatus       @default(ACTIVE)
   emailVerified     Boolean          @default(false) @map("email_verified")
-  mustChangePassword Boolean         @default(false)
+  mustChangePassword Boolean         @default(false) @map("mustChangePassword")
   lastLoginAt       DateTime?        @map("last_login_at") @db.Timestamptz(3)
   
   // Timestamps
@@ -153,10 +153,10 @@ model Benefit {
   merchantId       String             @map("merchant_id")
   title            String             @db.VarChar(255)
   description      String?            @db.Text
-  pointsCost       Int
+  pointsCost       Int                @map("pointsCost")
   stock            Int                @default(0)
   reservedStock    Int                @default(0) @map("reserved_stock")
-  imageUrl         String?            @db.VarChar(500)
+  imageUrl         String?            @db.VarChar(500) @map("imageUrl")
   active           Boolean            @default(true)
   category         String?            @db.VarChar(100)
   cooldownDays     Int                @default(0) @map("cooldown_days")
@@ -180,15 +180,15 @@ model Benefit {
 /// Perfil de Comerciante (Normalización 3NF)
 model MerchantProfile {
   id            String   @id @default(uuid())
-  userId        String   @unique
-  storeName     String   @db.VarChar(255)
+  userId        String   @unique @map("userId")
+  storeName     String   @db.VarChar(255) @map("storeName")
   address       String?  @db.VarChar(500)
   phone         String?  @db.VarChar(20)
   rut           String?  @unique @db.VarChar(20)
   
   // Timestamps
-  createdAt     DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+  createdAt     DateTime @default(now()) @map("createdAt") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updatedAt") @db.Timestamptz(3)
   
   // Relaciones
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -203,12 +203,12 @@ model Mission {
   description   String?        @db.Text
   points        Int
   frequency     FrequencyType
-  cooldownDays  Int            @default(0)
-  evidenceType  EvidenceType   @default(PHOTO)
+  cooldownDays  Int            @default(0) @map("cooldownDays")
+  evidenceType  EvidenceType   @default(PHOTO) @map("evidenceType")
   active        Boolean        @default(true)
   
   // Timestamps
-  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  createdAt     DateTime       @default(now()) @map("createdAt") @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
   
   // Relaciones
@@ -223,12 +223,12 @@ model Mission {
 /// Bandeja de Aprobaciones y Evidencias (separación de definición vs ejecución - 3NF)
 model MissionSubmission {
   id             String           @id @default(uuid())
-  userId         String
-  missionId      String
+  userId         String           @map("userId")
+  missionId      String           @map("missionId")
   evidenceUrl    String           @db.VarChar(500)
   status         SubmissionStatus @default(PENDING)
   observation    String?          @db.Text
-  validatedById  String?
+  validatedById  String?          @map("validatedById")
   
   // Timestamps
   createdAt      DateTime         @default(now()) @db.Timestamptz(3)
@@ -249,14 +249,14 @@ model MissionSubmission {
 /// Auditoría y Transparencia: Historial de decisiones administrativas
 model AdminLog {
   id          String   @id @default(uuid())
-  adminId     String
+  adminId     String   @map("adminId")
   action      String   @db.VarChar(255)
-  targetId    String   @db.VarChar(255)
+  targetId    String   @db.VarChar(255) @map("targetId")
   metadata    Json?
   description String?  @db.Text
   
   // Timestamps
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @map("createdAt") @db.Timestamptz(3)
   
   // Relaciones
   admin       User     @relation(fields: [adminId], references: [id], onDelete: Cascade)

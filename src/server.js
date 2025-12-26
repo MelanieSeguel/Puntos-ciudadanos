@@ -118,6 +118,14 @@ app.use(`/api/${config.apiVersion}/points`, pointsRoutes);
 import benefitsRoutes from './routes/benefits.routes.js';
 app.use(`/api/${config.apiVersion}/benefits`, benefitsRoutes);
 
+// Missions routes
+import missionsRoutes from './routes/missions.routes.js';
+app.use(`/api/${config.apiVersion}/missions`, missionsRoutes);
+
+// Admin routes
+import adminRoutes from './routes/admin.routes.js';
+app.use(`/api/${config.apiVersion}/admin`, adminRoutes);
+
 // TODO: Implementar rutas adicionales
 // import userRoutes from './routes/user.routes.js';
 // import walletRoutes from './routes/wallet.routes.js';

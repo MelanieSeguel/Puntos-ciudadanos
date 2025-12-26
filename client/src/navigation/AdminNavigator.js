@@ -15,6 +15,7 @@ import UsersManagementScreen from '../screens/admin/UsersManagementScreen';
 import MerchantsManagementScreen from '../screens/admin/MerchantsManagementScreen';
 import ReportsScreen from '../screens/admin/ReportsScreen';
 import SubmissionsApprovalScreen from '../screens/admin/SubmissionsApprovalScreen';
+import SubmissionDetailScreen from '../screens/admin/SubmissionDetailScreen';
 import MissionsManagementScreen from '../screens/admin/MissionsManagementScreen';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
 import { COLORS, TAB_CONFIG, SPACING } from '../theme/theme';
@@ -82,6 +83,20 @@ export default function AdminNavigator() {
           component={SubmissionsApprovalScreen}
           options={{ title: 'Aprobaciones Pendientes' }}
         />
+        <Stack.Group screenOptions={{ 
+          presentation: 'modal', 
+          headerShown: false, 
+          animationEnabled: true 
+        }}>
+          <Stack.Screen
+            name="SubmissionDetail"
+            component={SubmissionDetailScreen}
+            options={{ 
+              cardOverlayEnabled: true,
+              cardStyle: { backgroundColor: 'transparent' }
+            }}
+          />
+        </Stack.Group>
       </Stack.Navigator>
     );
   }

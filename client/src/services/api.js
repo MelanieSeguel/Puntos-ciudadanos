@@ -113,4 +113,25 @@ export const merchantAPI = {
   getStats: () => api.get('/merchant/stats'),
 };
 
+// Servicios de misiones
+export const missionsAPI = {
+  getAvailable: () => api.get('/missions'),
+  getById: (id) => api.get(`/missions/${id}`),
+  submitEvidence: (missionId, evidenceUrl) => 
+    api.post(`/missions/${missionId}/submit`, { evidenceUrl }),
+};
+
+// Servicios de admin
+export const adminAPI = {
+  getSubmissions: (status = 'PENDING') => api.get(`/admin/submissions?status=${status}`),
+  approveSubmission: (submissionId, notes) => {
+    console.log('[API] Calling approveSubmission with submissionId:', submissionId, 'notes:', notes);
+    return api.post(`/admin/submissions/${submissionId}/approve`, { notes });
+  },
+  rejectSubmission: (submissionId, reason) => {
+    console.log('[API] Calling rejectSubmission with submissionId:', submissionId, 'reason:', reason);
+    return api.post(`/admin/submissions/${submissionId}/reject`, { reason });
+  },
+};
+
 export default api;
