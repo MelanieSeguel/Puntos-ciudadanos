@@ -146,7 +146,7 @@ export default function SubmissionsApprovalScreen({ navigation }) {
           </View>
           <View style={[styles.badge, { 
             backgroundColor: item.status === 'PENDING' ? '#fff3cd' : item.status === 'APPROVED' ? '#d4edda' : '#f8d7da' 
-          }]}>
+          }]}> 
             <Text style={styles.badgeText}>
               {item.status === 'PENDING' ? 'Pendiente' : item.status === 'APPROVED' ? 'Aprobado' : 'Rechazado'}
             </Text>
@@ -157,11 +157,11 @@ export default function SubmissionsApprovalScreen({ navigation }) {
             <MaterialCommunityIcons name="target" size={20} color={COLORS.primary} />
             <View style={styles.missionDetails}>
               <Text style={styles.missionName}>{item.missionName}</Text>
-              <Text style={styles.points}>+{item.points} puntos</Text>
+              <Text style={styles.points}>{`+${item.points} puntos`}</Text>
             </View>
           </View>
         </View>
-        {item.observation && (
+        {!!item.observation && (
           <View style={styles.descriptionSection}>
             <Text style={styles.description} numberOfLines={2}>
               {item.observation}
@@ -170,16 +170,13 @@ export default function SubmissionsApprovalScreen({ navigation }) {
         )}
         <View style={styles.attachmentsInfo}>
           <MaterialCommunityIcons name="file-image" size={16} color={COLORS.gray} />
-          <Text style={styles.attachmentsCount}>
-            Evidencia adjunta
-          </Text>
+          <Text style={styles.attachmentsCount}>Evidencia adjunta</Text>
           <Text style={styles.submittedTime}>
             {(() => {
               const diffMs = Date.now() - new Date(item.submittedAt).getTime();
               const diffMins = Math.round(diffMs / 60000);
               const diffHours = Math.round(diffMs / 3600000);
               const diffDays = Math.round(diffMs / 86400000);
-              
               if (diffMins < 60) return `${diffMins} min atrás`;
               if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hora' : 'horas'} atrás`;
               return `${diffDays} ${diffDays === 1 ? 'día' : 'días'} atrás`;
