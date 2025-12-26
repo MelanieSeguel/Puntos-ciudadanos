@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
@@ -69,39 +69,51 @@ function EarnScreenComponent({ navigation: navigationProp }) {
     }
   };
 
-  const renderMission = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.card}
-      onPress={() => handleMissionPress(item)}
-    >
-      <MaterialCommunityIcons name="target" size={32} color={COLORS.primary} style={styles.icon} />
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{item.name || item.title}</Text>
-        <Text style={styles.cardDescription}>{item.description}</Text>
-        {item.frequency && <Text style={styles.frequency}>Frecuencia: {item.frequency}</Text>}
+  const renderMission = (item, i) => {
+    // Alternar iconos y tipo de botón para demo visual
+    const icons = ['recycle', 'water', 'account-heart', 'leaf', 'blood-bag', 'food', 'fire-truck', 'volume-high'];
+    const icon = item.icon || icons[i % icons.length];
+    const ctaType = i % 2 === 0 ? 'solid' : 'outline';
+    const ctaLabel = ctaType === 'solid' ? 'Participar' : 'Ver Detalles';
+    return (
+      <View key={item.id} style={styles.visualCard}>
+        {/* Badge de puntos */}
+        <View style={styles.visualPointsBadge}>
+          <Text style={styles.visualPointsText}>+{item.points} pts</Text>
+        </View>
+        {/* Icono redondo */}
+        <View style={styles.visualIconCircle}>
+          <MaterialCommunityIcons name={icon} size={28} color={COLORS.primary} />
+        </View>
+        {/* Contenido */}
+        <Text style={styles.visualCardTitle}>{item.name || item.title}</Text>
+        <Text style={styles.visualCardDesc}>{item.description}</Text>
+        {/* Botón principal */}
+        <TouchableOpacity
+          style={ctaType === 'outline' ? styles.visualBtnOutline : styles.visualBtnSolid}
+          onPress={() => handleMissionPress(item)}
+        >
+          <Text style={ctaType === 'outline' ? styles.visualBtnOutlineText : styles.visualBtnSolidText}>
+            {ctaLabel}
+          </Text>
+        </TouchableOpacity>
       </View>
-      <View style={styles.pointsBadge}>
-        <Text style={styles.pointsText}>+{item.points} pts</Text>
-      </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
-    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Formas de Ganar Puntos</Text>
-        <Text style={styles.subtitle}>Acumula puntos fácilmente</Text>
-      </View>
-
-      <FlatList
-        data={missions}
-        renderItem={renderMission}
-        keyExtractor={(item) => item.id}
-        scrollEnabled={false}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          loading ? (
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false} maxWidth={false} padding={0}>
+      <ScrollView
+        style={{ flex: 1, width: '100%', minHeight: '100vh' }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 0, minHeight: '100vh', width: '100%' }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.header, { width: '100%' }] }>
+          <Text style={styles.title}>Formas de Ganar Puntos</Text>
+          <Text style={styles.subtitle}>Acumula puntos fácilmente</Text>
+        </View>
+        <View style={styles.gridContainer}>
+          {loading ? (
             <View style={styles.centerContent}>
               <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.emptyText}>Cargando misiones...</Text>
@@ -113,23 +125,142 @@ function EarnScreenComponent({ navigation: navigationProp }) {
                 <Text style={styles.retryText}>Reintentar</Text>
               </TouchableOpacity>
             </View>
-          ) : (
+          ) : missions.length === 0 ? (
             <Text style={styles.emptyText}>No hay misiones disponibles</Text>
-          )
-        }
-      />
-
-      <View style={styles.info}>
-        <Text style={styles.infoTitle}>💡 Consejo</Text>
-        <Text style={styles.infoText}>
-          Cuantos más puntos tengas, más beneficios podrás disfrutar.
-        </Text>
-      </View>
+          ) : (
+            missions.map((m, i) => (
+              <View key={m.id} style={styles.gridCard}>
+                {renderMission(m, i)}
+              </View>
+            ))
+          )}
+        </View>
+        <View style={[styles.info, { width: '100%', maxWidth: '100vw' }] }>
+          <Text style={styles.infoTitle}>💡 Consejo</Text>
+          <Text style={styles.infoText}>
+            Cuantos más puntos tengas, más beneficios podrás disfrutar.
+          </Text>
+        </View>
+      </ScrollView>
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
+    gridContainer: {
+      flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+      flexWrap: Platform.OS === 'web' ? 'wrap' : 'nowrap',
+      justifyContent: 'flex-start',
+      alignItems: 'stretch',
+      width: '100%',
+      marginLeft: 0,
+      marginRight: 0,
+      marginBottom: 32,
+      gap: Platform.OS === 'web' ? 24 : 0,
+      rowGap: Platform.OS === 'web' ? 24 : 0,
+      columnGap: Platform.OS === 'web' ? 24 : 0,
+      paddingTop: 8,
+      paddingBottom: 8,
+      paddingHorizontal: Platform.OS === 'web' ? 32 : 0,
+      minHeight: 400,
+      boxSizing: Platform.OS === 'web' ? 'border-box' : undefined,
+    },
+    gridCard: {
+      flexBasis: Platform.OS === 'web' ? 0 : '100%',
+      flexGrow: Platform.OS === 'web' ? 1 : 0,
+      flexShrink: 1,
+      minWidth: Platform.OS === 'web' ? 260 : 200,
+      marginBottom: Platform.OS === 'web' ? 24 : 24,
+      marginRight: Platform.OS === 'web' ? 0 : 0,
+      display: 'flex',
+    },
+  visualCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    // boxShadow solo en web
+    ...(Platform.OS === 'web' ? { boxShadow: '0 2px 8px #0001' } : {}),
+    padding: 20,
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    minWidth: 220,
+    maxWidth: Platform.OS === 'web' ? 340 : '100%',
+    width: '100%',
+    height: '80%',
+  },
+  visualPointsBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#F5FFF2',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    zIndex: 2,
+  },
+  visualPointsText: {
+    color: '#3CB371',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  visualIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F0F7FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  visualCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: 4,
+    marginTop: 4,
+    textAlign: 'left',
+  },
+  visualCardDesc: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginBottom: 16,
+    textAlign: 'left',
+  },
+  visualBtnSolid: {
+    backgroundColor: '#6FCF97',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    alignSelf: 'stretch',
+    marginTop: 'auto',
+  },
+  visualBtnSolidText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  visualBtnOutline: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#6FCF97',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    alignSelf: 'stretch',
+    marginTop: 'auto',
+  },
+  visualBtnOutlineText: {
+    color: '#6FCF97',
+    fontWeight: '700',
+    fontSize: 16,
+    textAlign: 'center',
+  },
   header: {
     marginBottom: SPACING.xl,
   },
