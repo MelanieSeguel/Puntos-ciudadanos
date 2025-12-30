@@ -69,261 +69,362 @@ function EarnScreenComponent({ navigation: navigationProp }) {
     }
   };
 
-  const renderMission = (item, i) => {
-    // Alternar iconos y tipo de botón para demo visual
+  const renderMission = ({ item, index }) => {
+    // Mapear categorías a colores e íconos
     const icons = ['recycle', 'water', 'account-heart', 'leaf', 'blood-bag', 'food', 'fire-truck', 'volume-high'];
-    const icon = item.icon || icons[i % icons.length];
-    const ctaType = i % 2 === 0 ? 'solid' : 'outline';
-    const ctaLabel = ctaType === 'solid' ? 'Participar' : 'Ver Detalles';
+    const colors = ['#4CAF50', '#2196F3', '#E91E63', '#FF9800', '#9C27B0', '#F44336', '#00BCD4', '#FFC107'];
+    
+    const icon = item.icon || icons[index % icons.length];
+    const color = colors[index % colors.length];
+
+    // Calcular fecha de expiración
+    const isExpired = item.expiresAt ? new Date(item.expiresAt) < new Date() : false;
+    const expiresInText = !isExpired && item.expiresAt ? getTimeUntilExpiration(item.expiresAt) : null;
+
+    // Verificar si está en cooldown (si viene del backend)
+    const isOnCooldown = item.cooldownUntil ? new Date(item.cooldownUntil) > new Date() : false;
+    const cooldownText = isOnCooldown ? getCooldownText(item.cooldownUntil) : null;
+
+    // Determinar si está bloqueada (expirada o en cooldown)
+    const isLocked = isExpired || isOnCooldown;
+
     return (
-      <View key={item.id} style={styles.visualCard}>
-        {/* Badge de puntos */}
-        <View style={styles.visualPointsBadge}>
-          <Text style={styles.visualPointsText}>+{item.points} pts</Text>
+      <TouchableOpacity
+        style={[styles.missionCard, isLocked && styles.missionCardExpired]}
+        onPress={() => !isLocked && handleMissionPress(item)}
+        activeOpacity={isLocked ? 1 : 0.8}
+        disabled={isLocked}
+      >
+        {/* Candado sobre el ícono si está bloqueada */}
+        {isLocked && (
+          <View style={styles.lockOverlay}>
+            <MaterialCommunityIcons name="lock" size={48} color="#BDBDBD" />
+          </View>
+        )}
+
+        {/* Badge de puntos en la esquina */}
+        <View style={[styles.pointsBadge, { backgroundColor: isLocked ? COLORS.gray : COLORS.success }]}>
+          <Text style={styles.pointsText}>+{item.points} pts</Text>
         </View>
-        {/* Icono redondo */}
-        <View style={styles.visualIconCircle}>
-          <MaterialCommunityIcons name={icon} size={28} color={COLORS.primary} />
+
+        {/* Ícono circular */}
+        <View style={[styles.iconCircle, { backgroundColor: color + '20', opacity: isLocked ? 0.4 : 1 }]}>
+          <MaterialCommunityIcons name={icon} size={32} color={color} />
         </View>
-        {/* Contenido */}
-        <Text style={styles.visualCardTitle}>{item.name || item.title}</Text>
-        <Text style={styles.visualCardDesc}>{item.description}</Text>
-        {/* Botón principal */}
-        <TouchableOpacity
-          style={ctaType === 'outline' ? styles.visualBtnOutline : styles.visualBtnSolid}
-          onPress={() => handleMissionPress(item)}
-        >
-          <Text style={ctaType === 'outline' ? styles.visualBtnOutlineText : styles.visualBtnSolidText}>
-            {ctaLabel}
-          </Text>
-        </TouchableOpacity>
-      </View>
+
+        {/* Título */}
+        <Text style={[styles.missionTitle, isLocked && styles.textExpired]}>
+          {item.name || item.title}
+        </Text>
+
+        {/* Descripción */}
+        <Text style={[styles.missionDescription, isLocked && styles.textExpired]} numberOfLines={2}>
+          {item.description}
+        </Text>
+
+        {/* Fecha de expiración */}
+        {expiresInText && !isOnCooldown && (
+          <View style={styles.expirationRow}>
+            <MaterialCommunityIcons name="clock-alert-outline" size={14} color={COLORS.warning} />
+            <Text style={styles.expirationText}>{expiresInText}</Text>
+          </View>
+        )}
+
+        {/* Estado expirado */}
+        {isExpired && !isOnCooldown && (
+          <View style={styles.expiredBadge}>
+            <Text style={styles.expiredText}>Expirada</Text>
+          </View>
+        )}
+
+        {/* Estado en cooldown */}
+        {isOnCooldown && (
+          <View style={styles.cooldownBadge}>
+            <MaterialCommunityIcons name="lock-clock" size={14} color={COLORS.white} />
+            <Text style={styles.cooldownText}>{cooldownText}</Text>
+          </View>
+        )}
+
+        {/* Frecuencia si existe */}
+        {item.frequencyType && !isLocked && (
+          <View style={styles.frequencyRow}>
+            <MaterialCommunityIcons name="clock-outline" size={12} color={COLORS.gray} />
+            <Text style={styles.frequencyText}>{item.frequencyType}</Text>
+          </View>
+        )}
+
+        {/* Botón de acción */}
+        {!isLocked && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleMissionPress(item)}
+          >
+            <Text style={styles.actionButtonText}>Participar</Text>
+            <MaterialCommunityIcons name="arrow-right" size={16} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
     );
+  };
+
+  // Función para calcular tiempo restante
+  const getTimeUntilExpiration = (expiresAt) => {
+    const now = new Date();
+    const expires = new Date(expiresAt);
+    const diffMs = expires - now;
+    
+    if (diffMs <= 0) return null;
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 7) {
+      return `Expira en ${diffDays} días`;
+    } else if (diffDays > 0) {
+      return `Expira en ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+    } else if (diffHours > 0) {
+      return `Expira en ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+    } else {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return `Expira en ${diffMinutes} minuto${diffMinutes > 1 ? 's' : ''}`;
+    }
+  };
+
+  // Función para calcular tiempo de cooldown
+  const getCooldownText = (cooldownUntil) => {
+    const now = new Date();
+    const cooldown = new Date(cooldownUntil);
+    const diffMs = cooldown - now;
+    
+    if (diffMs <= 0) return null;
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 0) {
+      return `Debes esperar ${diffDays} día${diffDays > 1 ? 's' : ''} para completar esta misión de nuevo`;
+    } else if (diffHours > 0) {
+      return `Debes esperar ${diffHours} hora${diffHours > 1 ? 's' : ''} para completar esta misión de nuevo`;
+    } else {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return `Debes esperar ${diffMinutes} minuto${diffMinutes > 1 ? 's' : ''} para completar esta misión de nuevo`;
+    }
   };
 
   return (
     <ScreenWrapper bgColor={COLORS.light} safeArea={false} maxWidth={false} padding={0}>
-      <ScrollView
-        style={{ flex: 1, width: '100%', minHeight: '100vh' }}
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 0, minHeight: '100vh', width: '100%', paddingTop: Platform.OS === 'web' ? 90 : 0 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.gridContainer}>
-          {loading ? (
-            <View style={styles.centerContent}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.emptyText}>Cargando misiones...</Text>
-            </View>
-          ) : error ? (
-            <View style={styles.centerContent}>
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={loadMissions}>
-                <Text style={styles.retryText}>Reintentar</Text>
-              </TouchableOpacity>
-            </View>
-          ) : missions.length === 0 ? (
-            <Text style={styles.emptyText}>No hay misiones disponibles</Text>
-          ) : (
-            missions.map((m, i) => (
-              <View key={m.id} style={styles.gridCard}>
-                {renderMission(m, i)}
+      <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}>
+        {loading ? (
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>Cargando misiones...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.centerContent}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadMissions}>
+              <Text style={styles.retryText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={missions}
+            renderItem={renderMission}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            scrollEnabled={true}
+            style={styles.list}
+            numColumns={Platform.OS === 'web' ? 3 : 1}
+            key={Platform.OS === 'web' ? 'grid' : 'list'}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons name="lightning-bolt-outline" size={64} color={COLORS.gray} />
+                <Text style={styles.emptyText}>No hay misiones disponibles</Text>
               </View>
-            ))
-          )}
-        </View>
-        <View style={[styles.info, { width: '100%', maxWidth: '100vw' }] }>
-          <Text style={styles.infoTitle}>💡 Consejo</Text>
-          <Text style={styles.infoText}>
-            Cuantos más puntos tengas, más beneficios podrás disfrutar.
-          </Text>
-        </View>
-      </ScrollView>
+            }
+          />
+        )}
+      </View>
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-    gridContainer: {
-      flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-      flexWrap: Platform.OS === 'web' ? 'wrap' : 'nowrap',
-      justifyContent: 'flex-start',
-      alignItems: 'stretch',
-      width: '100%',
-      marginLeft: 0,
-      marginRight: 0,
-      marginBottom: 32,
-      gap: Platform.OS === 'web' ? 24 : 0,
-      rowGap: Platform.OS === 'web' ? 24 : 0,
-      columnGap: Platform.OS === 'web' ? 24 : 0,
-      paddingTop: 8,
-      paddingBottom: 8,
-      paddingHorizontal: Platform.OS === 'web' ? 32 : 0,
-      minHeight: 400,
-      boxSizing: Platform.OS === 'web' ? 'border-box' : undefined,
-    },
-    gridCard: {
-      flexBasis: Platform.OS === 'web' ? 0 : '100%',
-      flexGrow: Platform.OS === 'web' ? 1 : 0,
-      flexShrink: 1,
-      minWidth: Platform.OS === 'web' ? 260 : 200,
-      marginBottom: Platform.OS === 'web' ? 24 : 24,
-      marginRight: Platform.OS === 'web' ? 0 : 0,
-      display: 'flex',
-    },
-  visualCard: {
+  container: {
+    flex: 1,
+    paddingHorizontal: Platform.OS === 'web' ? SPACING.lg : SPACING.md,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingTop: Platform.OS === 'web' ? 0 : SPACING.md,
+    paddingBottom: SPACING.xl,
+  },
+  
+  // Tarjeta de misión minimalista
+  missionCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    // boxShadow solo en web
-    ...(Platform.OS === 'web' ? { boxShadow: '0 2px 8px #0001' } : {}),
-    padding: 20,
+    borderRadius: LAYOUT.borderRadius.lg,
+    marginBottom: SPACING.lg,
+    padding: SPACING.lg,
     position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-    minWidth: 220,
-    maxWidth: Platform.OS === 'web' ? 340 : '100%',
-    width: '100%',
-    height: '80%',
+    ...LAYOUT.shadowMedium,
+    ...(Platform.OS === 'web' ? {
+      flex: 1,
+      maxWidth: '32%',
+      marginHorizontal: '0.5%',
+    } : {
+      width: '100%',
+    }),
   },
-  visualPointsBadge: {
+  
+  // Badge de puntos en esquina
+  pointsBadge: {
     position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: '#F5FFF2',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    zIndex: 2,
+    zIndex: 1,
   },
-  visualPointsText: {
-    color: '#3CB371',
+  pointsText: {
+    color: COLORS.white,
+    fontSize: 14,
     fontWeight: '700',
-    fontSize: 16,
   },
-  visualIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F0F7FF',
+  
+  // Ícono circular
+  iconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 8,
+    marginBottom: SPACING.md,
   },
-  visualCardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: 4,
-    marginTop: 4,
-    textAlign: 'left',
-  },
-  visualCardDesc: {
-    fontSize: 14,
-    color: COLORS.gray,
-    marginBottom: 16,
-    textAlign: 'left',
-  },
-  visualBtnSolid: {
-    backgroundColor: '#6FCF97',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    alignSelf: 'stretch',
-    marginTop: 'auto',
-  },
-  visualBtnSolidText: {
-    color: '#fff',
-    fontWeight: '700',
+  
+  // Título
+  missionTitle: {
     fontSize: 16,
-    textAlign: 'center',
-  },
-  visualBtnOutline: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#6FCF97',
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    alignSelf: 'stretch',
-    marginTop: 'auto',
-  },
-  visualBtnOutlineText: {
-    color: '#6FCF97',
-    fontWeight: '700',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  header: {
-    marginBottom: SPACING.xl,
-  },
-  title: {
-    fontSize: TYPOGRAPHY.h3,
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: SPACING.sm,
   },
-  subtitle: {
-    fontSize: TYPOGRAPHY.body2,
+  
+  // Descripción
+  missionDescription: {
+    fontSize: 13,
     color: COLORS.gray,
-  },
-  list: {
-    marginBottom: SPACING.xl,
-  },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderRadius: LAYOUT.borderRadius.lg,
-    padding: SPACING.md,
     marginBottom: SPACING.md,
+    lineHeight: 18,
+  },
+  
+  // Fila de frecuencia
+  frequencyRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    ...LAYOUT.shadowSmall,
+    marginBottom: SPACING.md,
+    gap: 4,
   },
-  icon: {
-    marginRight: SPACING.md,
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: TYPOGRAPHY.body1,
-    fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: SPACING.xs,
-  },
-  cardDescription: {
-    fontSize: TYPOGRAPHY.caption,
+  frequencyText: {
+    fontSize: 11,
     color: COLORS.gray,
   },
-  frequency: {
-    fontSize: TYPOGRAPHY.caption,
-    color: COLORS.info,
-    marginTop: SPACING.xs,
-  },
-  pointsBadge: {
+  
+  // Botón de acción
+  actionButton: {
     backgroundColor: COLORS.success,
-    borderRadius: LAYOUT.borderRadius.md,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-  },
-  pointsText: {
-    fontSize: TYPOGRAPHY.caption,
-    color: COLORS.white,
-    fontWeight: '600',
-  },
-  centerContent: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.xl * 2,
+    gap: 6,
+    marginTop: 'auto',
   },
-  emptyText: {
-    fontSize: TYPOGRAPHY.body1,
+  actionButtonText: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  
+  // Estilos de expiración
+  missionCardExpired: {
+    opacity: 0.6,
+    backgroundColor: '#F5F5F5',
+  },
+  textExpired: {
     color: COLORS.gray,
-    textAlign: 'center',
-    marginTop: SPACING.xl,
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: LAYOUT.borderRadius.lg,
+  },
+  expirationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+    gap: 4,
+  },
+  expirationText: {
+    fontSize: 12,
+    color: COLORS.warning,
+    fontWeight: '600',
+  },
+  expiredBadge: {
+    backgroundColor: COLORS.gray + '30',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: SPACING.sm,
+  },
+  expiredText: {
+    fontSize: 11,
+    color: COLORS.gray,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  cooldownBadge: {
+    backgroundColor: '#FF6B35',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cooldownText: {
+    fontSize: 11,
+    color: COLORS.white,
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 15,
+  },
+  
+  // Estados de carga y error
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    fontSize: TYPOGRAPHY.body2,
+    color: COLORS.gray,
   },
   errorText: {
     fontSize: TYPOGRAPHY.body1,
@@ -342,26 +443,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: TYPOGRAPHY.body1,
   },
-  info: {
-    backgroundColor: COLORS.white,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.info,
-    borderRadius: LAYOUT.borderRadius.md,
-    padding: SPACING.md,
+  emptyContainer: {
+    padding: SPACING.xl,
+    alignItems: 'center',
   },
-  infoTitle: {
-    fontSize: TYPOGRAPHY.body1,
-    fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: SPACING.xs,
-  },
-  infoText: {
+  emptyText: {
+    marginTop: SPACING.md,
     fontSize: TYPOGRAPHY.body2,
     color: COLORS.gray,
-    lineHeight: 20,
-  },
-  listContent: {
-    paddingTop: Platform.OS === 'web' ? 0 : SPACING.md,
   },
 });
 

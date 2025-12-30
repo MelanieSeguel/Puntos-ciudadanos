@@ -206,6 +206,7 @@ model Mission {
   cooldownDays  Int            @default(0) @map("cooldownDays")
   evidenceType  EvidenceType   @default(PHOTO) @map("evidenceType")
   active        Boolean        @default(true)
+  expiresAt     DateTime?      @map("expiresAt") @db.Timestamptz(3)
   
   // Timestamps
   createdAt     DateTime       @default(now()) @map("createdAt") @db.Timestamptz(3)
@@ -217,6 +218,7 @@ model Mission {
   
   @@index([active])
   @@index([frequency])
+  @@index([expiresAt])
   @@map("missions")
 }
 

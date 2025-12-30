@@ -26,20 +26,53 @@ router.get('/', authenticate, async (req, res) => {
         evidenceType: true,
         active: true,
         createdAt: true,
+        expiresAt: true,
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
-    console.log('[GET /missions] Misiones encontradas:', missions.length);
-    console.log('[GET /missions] Datos:', missions);
+    // Para cada misión, verificar si el usuario está en cooldown
+    const missionsWithCooldown = await Promise.all(
+      missions.map(async (mission) => {
+        // Buscar la última completación de esta misión por este usuario
+        const lastCompletion = await prisma.missionCompletion.findFirst({
+          where: {
+            userId: req.user.id,
+            missionId: mission.id,
+          },
+          orderBy: {
+            completedAt: 'desc',
+          },
+        });
+
+        let cooldownUntil = null;
+        if (lastCompletion && mission.cooldownDays > 0) {
+          // Calcular cuándo termina el cooldown
+          const cooldownEnd = new Date(lastCompletion.completedAt);
+          cooldownEnd.setDate(cooldownEnd.getDate() + mission.cooldownDays);
+          
+          // Solo enviar cooldownUntil si aún está en cooldown
+          if (cooldownEnd > new Date()) {
+            cooldownUntil = cooldownEnd;
+          }
+        }
+
+        return {
+          ...mission,
+          cooldownUntil,
+        };
+      })
+    );
+
+    console.log('[GET /missions] Misiones encontradas:', missionsWithCooldown.length);
 
     res.json({
       success: true,
       message: 'Misiones obtenidas exitosamente',
-      missions,
-      total: missions.length,
+      missions: missionsWithCooldown,
+      total: missionsWithCooldown.length,
     });
   } catch (error) {
     console.error('[GET /missions] Error listando misiones:', error);
