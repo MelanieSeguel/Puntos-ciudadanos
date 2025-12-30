@@ -129,20 +129,27 @@ function WebLayout() {
   };
 
   const renderContent = () => {
-    switch (activeTab) {
-      case 'Home':
-        return <UserHomeScreen navigation={homeNavigationMock} />;
-      case 'Benefits':
-        return <BenefitsScreen />;
-      case 'Earn':
-        return <EarnScreen navigation={earnNavigationMock} />;
-      case 'Historial':
-        return <HistorialScreen />;
-      case 'Profile':
-        return <ProfileScreen />;
-      default:
-        return <UserHomeScreen />;
-    }
+    // Renderizar todas las pantallas pero solo mostrar la activa
+    // Esto evita montar/desmontar componentes y llamadas API repetidas
+    return (
+      <>
+        <View style={activeTab === 'Home' ? styles.activeScreen : styles.hiddenScreen}>
+          <UserHomeScreen navigation={homeNavigationMock} />
+        </View>
+        <View style={activeTab === 'Benefits' ? styles.activeScreen : styles.hiddenScreen}>
+          <BenefitsScreen />
+        </View>
+        <View style={activeTab === 'Earn' ? styles.activeScreen : styles.hiddenScreen}>
+          <EarnScreen navigation={earnNavigationMock} />
+        </View>
+        <View style={activeTab === 'Historial' ? styles.activeScreen : styles.hiddenScreen}>
+          <HistorialScreen />
+        </View>
+        <View style={activeTab === 'Profile' ? styles.activeScreen : styles.hiddenScreen}>
+          <ProfileScreen />
+        </View>
+      </>
+    );
   };
 
   const getPageTitle = () => {
@@ -456,6 +463,13 @@ const styles = StyleSheet.create({
     width: '80%',
     backgroundColor: COLORS.white,
     overflow: 'auto',
+  },
+  activeScreen: {
+    flex: 1,
+    display: 'flex',
+  },
+  hiddenScreen: {
+    display: 'none',
   },
   modalOverlay: {
     flex: 1,

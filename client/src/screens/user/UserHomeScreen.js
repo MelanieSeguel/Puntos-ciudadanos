@@ -15,7 +15,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme/theme';
-import { walletAPI, benefitsAPI, pointsAPI } from '../../services/api';
+import { walletAPI, benefitsAPI, pointsAPI, missionsAPI } from '../../services/api';
 import { getErrorMessage } from '../../utils/errorHandler';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -37,6 +37,7 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   useEffect(() => {
     // Solo cargar datos si el usuario está autenticado
@@ -48,8 +49,26 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
     }
   }, [authState.authenticated, authState.token]);
 
+  // Auto-refresh cada 2 minutos
+  useEffect(() => {
+    if (!authState.authenticated || !authState.token) return;
+
+    const interval = setInterval(() => {
+      loadData();
+    }, 120000); // 2 minutos
+
+    return () => clearInterval(interval);
+  }, [authState.authenticated, authState.token]);
+
   const loadData = async () => {
+    // Prevenir múltiples cargas simultáneas
+    if (isLoadingData) {
+      console.log('[UserHomeScreen] Ya hay una carga en progreso, omitiendo...');
+      return;
+    }
+
     try {
+      setIsLoadingData(true);
       setLoading(true);
       setError(null);
 
@@ -59,10 +78,11 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
         return;
       }
 
-      const [userRes, benefitsRes, transactionsRes] = await Promise.all([
+      const [userRes, benefitsRes, transactionsRes, missionsRes] = await Promise.all([
         walletAPI.getBalance(),
         benefitsAPI.getAll(),
-        pointsAPI.getTransactions(), // Cargar historial de transacciones
+        pointsAPI.getTransactions(5, 0),
+        missionsAPI.getAvailable(),
       ]);
 
       // Extraer datos del usuario
@@ -78,40 +98,60 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
         setUserData({ name: 'Usuario', email: '' });
       }
 
-      // Extraer y procesar transacciones (para activities)
+      // Extraer y procesar transacciones
       const transactionsList = (transactionsRes.data?.data || []);
-      const formattedActivities = transactionsList.map(t => {
+      const formattedActivities = transactionsList.slice(0, 3).map(t => {
         const iconMap = {
-          EARN: 'plus-circle',
-          REDEEM: 'minus-circle',
-          TRANSFER: 'transfer',
+          EARNED: 'plus-circle',
+          SPENT: 'gift',
+          TRANSFER: 'swap-horizontal',
         };
         const colorMap = {
-          EARN: '#4CAF50',
-          REDEEM: '#f44336',
+          EARNED: '#4CAF50',
+          SPENT: '#FF9800',
           TRANSFER: '#2196F3',
         };
+
+        const date = new Date(t.createdAt);
+        const today = new Date();
+        const isToday = date.toDateString() === today.toDateString();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const isYesterday = date.toDateString() === yesterday.toDateString();
+
+        let timeString;
+        if (isToday) {
+          timeString = `Hoy, ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+        } else if (isYesterday) {
+          timeString = `Ayer, ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+        } else {
+          timeString = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        }
 
         return {
           id: t.id,
           title: t.description || 'Transacción',
-          description: t.description || '',
-          points: `${t.type === 'EARN' ? '+' : '-'}${t.amount}`,
+          description: t.type === 'EARNED' ? 'Puntos ganados' : t.type === 'SPENT' ? 'Beneficio canjeado' : 'Transferencia',
+          points: `${t.type === 'EARNED' ? '+' : '-'}${t.amount}`,
           color: colorMap[t.type] || '#9C27B0',
           icon: iconMap[t.type] || 'history',
-          time: new Date(t.createdAt).toLocaleDateString('es-ES').toUpperCase(),
+          time: timeString,
         };
       });
       setActivities(formattedActivities);
       
       // Calcular puntos mensuales
-      const monthlyEarned = formattedActivities
-        .filter(a => a.points.startsWith('+'))
-        .reduce((sum, a) => sum + parseInt(a.points.substring(1)), 0);
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthlyTransactions = transactionsList.filter(t => {
+        const tDate = new Date(t.createdAt);
+        return tDate >= monthStart && t.type === 'EARNED';
+      });
+      const monthlyEarned = monthlyTransactions.reduce((sum, t) => sum + t.amount, 0);
       setMonthlyPoints(monthlyEarned);
 
       // Extraer beneficios
-      const beneficisList = (benefitsRes.data?.data || []).map(b => ({
+      const beneficisList = (benefitsRes.data?.data || []).slice(0, 4).map(b => ({
         id: b.id,
         name: b.title,
         description: b.description,
@@ -120,6 +160,16 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
         redeemable: b.stock > 0,
       }));
       setBenefits(beneficisList);
+
+      // Extraer misiones disponibles
+      const missionsList = (missionsRes.data?.missions || missionsRes.data?.data || []).slice(0, 4).map(m => ({
+        id: m.id,
+        title: m.title || m.name,
+        description: m.description?.substring(0, 40) + '...' || 'Completa esta misión',
+        points: `+${m.points}`,
+        icon: m.icon || 'star',
+      }));
+      setEarnOptions(missionsList);
 
     } catch (err) {
       const errorMessage = getErrorMessage(err);
@@ -133,6 +183,7 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
       }
     } finally {
       setLoading(false);
+      setIsLoadingData(false);
     }
   };
 
@@ -188,25 +239,65 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
 
         {/* CONTENEDOR PRINCIPAL (BALANCE + STATS) */}
         <View style={styles.mainContent}>
-          {/* TARJETA DE BALANCE */}
-          <View style={styles.balanceCard}>
-            <View style={styles.balanceTop}>
-              <View>
-                <Text style={styles.balanceLabel}>BALANCE DISPONIBLE</Text>
-                <Text style={styles.balanceAmount}>{balance.toLocaleString()}</Text>
-                <Text style={styles.balanceUnit}>Puntos</Text>
+          {/* COLUMNA IZQUIERDA: BALANCE + GANA PUNTOS */}
+          <View style={styles.leftColumn}>
+            {/* TARJETA DE BALANCE */}
+            <View style={styles.balanceCard}>
+              <View style={styles.balanceTop}>
+                <View>
+                  <Text style={styles.balanceLabel}>BALANCE DISPONIBLE</Text>
+                  <Text style={styles.balanceAmount}>{balance.toLocaleString()}</Text>
+                  <Text style={styles.balanceUnit}>Puntos</Text>
+                </View>
+                <MaterialCommunityIcons name="wallet" size={80} color="#E8F5E9" />
               </View>
-              <MaterialCommunityIcons name="wallet" size={80} color="#E8F5E9" />
+              <View style={styles.balanceActions}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.primaryBtn]}
+                  onPress={() => navigation.navigate('Benefits')}
+                >
+                  <MaterialCommunityIcons name="gift" size={18} color={COLORS.white} />
+                  <Text style={styles.primaryBtnText}>Canjear</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.balanceActions}>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.primaryBtn]}
-                onPress={() => navigation.navigate('Benefits')}
-              >
-                <MaterialCommunityIcons name="gift" size={18} color={COLORS.white} />
-                <Text style={styles.primaryBtnText}>Canjear</Text>
-              </TouchableOpacity>
-            </View>
+
+            {/* SECCIÓN GANA MÁS PUNTOS HOY */}
+            {earnOptions.length > 0 && (
+              <View style={styles.earnSectionInline}>
+                <View style={styles.earnHeader}>
+                  <MaterialCommunityIcons name="lightning-bolt" size={20} color={COLORS.primary} />
+                  <Text style={styles.earnTitle}>Gana Más Puntos Hoy</Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.earnScroll}
+                >
+                  {earnOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={styles.earnCard}
+                      onPress={() => navigation.navigate('Earn')}
+                    >
+                      <View style={styles.earnIconContainer}>
+                        <MaterialCommunityIcons
+                          name={option.icon}
+                          size={32}
+                          color={COLORS.primary}
+                        />
+                      </View>
+                      <Text style={styles.earnCardTitle}>{option.title}</Text>
+                      <Text style={styles.earnCardDesc}>{option.description}</Text>
+                      <View style={styles.earnCardFooter}>
+                        <Text style={styles.earnCardPoints}>{option.points}</Text>
+                        <MaterialCommunityIcons name="arrow-right" size={18} color={COLORS.primary} />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </View>
 
           {/* PANEL DERECHO (STATS + ACTIVIDAD) */}
@@ -240,64 +331,35 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
                 </TouchableOpacity>
               </View>
               <View style={styles.activitiesList}>
-                {activities.map((activity) => (
-                  <View key={activity.id} style={styles.activityItem}>
-                    <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
-                      <MaterialCommunityIcons
-                        name={activity.icon}
-                        size={18}
-                        color={activity.color}
-                      />
+                {activities.length === 0 ? (
+                  <Text style={styles.emptyText}>No hay actividad reciente</Text>
+                ) : (
+                  activities.map((activity) => (
+                    <View key={activity.id} style={styles.activityItem}>
+                      <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                        <MaterialCommunityIcons
+                          name={activity.icon}
+                          size={18}
+                          color={activity.color}
+                        />
+                      </View>
+                      <View style={styles.activityContent}>
+                        <Text style={styles.activityItemTitle}>{activity.title}</Text>
+                        <Text style={styles.activityDesc}>{activity.description}</Text>
+                        <Text style={styles.activityTime}>{activity.time}</Text>
+                      </View>
+                      <Text style={[styles.activityPoints, { color: activity.color }]}>
+                        {activity.points}
+                      </Text>
                     </View>
-                    <View style={styles.activityContent}>
-                      <Text style={styles.activityItemTitle}>{activity.title}</Text>
-                      <Text style={styles.activityDesc}>{activity.description}</Text>
-                      <Text style={styles.activityTime}>{activity.time}</Text>
-                    </View>
-                    <Text style={[styles.activityPoints, { color: activity.color }]}>
-                      {activity.points}
-                    </Text>
-                  </View>
-                ))}
+                  ))
+                )}
               </View>
             </View>
           </View>
         </View>
 
-        {/* SECCIÓN GANA MÁS PUNTOS HOY */}
-        <View style={styles.earnSection}>
-          <View style={styles.earnHeader}>
-            <MaterialCommunityIcons name="lightning-bolt" size={20} color={COLORS.primary} />
-            <Text style={styles.earnTitle}>Gana Más Puntos Hoy</Text>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.earnScroll}
-          >
-            {earnOptions.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={styles.earnCard}
-                onPress={() => navigation.navigate('Earn')}
-              >
-                <View style={styles.earnIconContainer}>
-                  <MaterialCommunityIcons
-                    name={option.icon}
-                    size={32}
-                    color={COLORS.primary}
-                  />
-                </View>
-                <Text style={styles.earnCardTitle}>{option.title}</Text>
-                <Text style={styles.earnCardDesc}>{option.description}</Text>
-                <View style={styles.earnCardFooter}>
-                  <Text style={styles.earnCardPoints}>{option.points}</Text>
-                  <MaterialCommunityIcons name="arrow-right" size={18} color={COLORS.primary} />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+
 
         {/* BENEFICIOS DISPONIBLES */}
         {benefits.length > 0 && (
@@ -365,6 +427,12 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontSize: TYPOGRAPHY.body2,
   },
+  emptyText: {
+    color: COLORS.gray,
+    fontSize: 12,
+    textAlign: 'center',
+    paddingVertical: SPACING.md,
+  },
   greeting: {
     marginBottom: SPACING.lg,
   },
@@ -372,6 +440,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: COLORS.dark,
+  },
+  emptyText: {
+    color: COLORS.gray,
+    fontSize: 12,
+    textAlign: 'center',
+    paddingVertical: SPACING.md,
   },
   dateContainer: {
     flexDirection: 'row',
@@ -388,6 +462,10 @@ const styles = StyleSheet.create({
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     alignItems: Platform.OS === 'web' ? 'flex-start' : 'stretch',
   },
+  leftColumn: {
+    flex: Platform.OS === 'web' ? 1.5 : 1,
+    gap: SPACING.md,
+  },
   balanceCard: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
@@ -395,7 +473,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.light,
     padding: SPACING.lg,
     marginBottom: Platform.OS === 'web' ? 0 : SPACING.md,
-    flex: Platform.OS === 'web' ? 1.5 : 1,
   },
   balanceTop: {
     flexDirection: 'row',
@@ -554,6 +631,10 @@ const styles = StyleSheet.create({
   },
   earnSection: {
     marginBottom: SPACING.xl,
+  },
+  earnSectionInline: {
+    marginTop: 0,
+    width: '100%',
   },
   earnHeader: {
     flexDirection: 'row',

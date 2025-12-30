@@ -17,15 +17,21 @@ export default function WebHeader({ title = 'Puntos Ciudadanos' }) {
   const { authState } = useContext(AuthContext);
   const [userData, setUserData] = useState({ name: 'Usuario', email: '' });
   const [balance, setBalance] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    if (authState.authenticated && authState.token) {
+    // Solo cargar una vez al inicio
+    if (authState.authenticated && authState.token && !dataLoaded) {
       loadUserData();
     }
-  }, [authState.authenticated, authState.token]);
+  }, [authState.authenticated, authState.token, dataLoaded]);
 
   const loadUserData = async () => {
+    if (isLoading) return;
+    
     try {
+      setIsLoading(true);
       const response = await walletAPI.getBalance();
       const user = response.data?.data;
       
@@ -35,9 +41,12 @@ export default function WebHeader({ title = 'Puntos Ciudadanos' }) {
           email: user.email || '',
         });
         setBalance(user.wallet?.balance || 0);
+        setDataLoaded(true);
       }
     } catch (error) {
       console.error('[WebHeader] Error cargando datos:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
