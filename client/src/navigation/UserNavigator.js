@@ -5,8 +5,8 @@
  * - WEB: Layout con Sidebar (izquierda 20%) + Contenido (derecha 80%)
  */
 
-import React, { useState } from 'react';
-import { View, StyleSheet, Platform, TouchableOpacity, Text, ScrollView, Modal } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { View, StyleSheet, Platform, TouchableOpacity, Text, ScrollView, Modal, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -21,6 +21,7 @@ import MissionSubmissionScreen from '../screens/user/MissionSubmissionScreen';
 import BenefitDetailScreen from '../screens/user/BenefitDetailScreen';
 import QRCodeScreen from '../screens/user/QRCodeScreen';
 import WebHeader from '../components/WebHeader';
+import { AuthContext } from '../context/AuthContext';
 import { COLORS, SPACING } from '../theme/theme';
 
 const Stack = createNativeStackNavigator();
@@ -32,6 +33,18 @@ const isWeb = Platform.OS === 'web';
 // COMPONENTE: Sidebar para WEB
 // ============================================================================
 function WebSidebar({ activeTab, onNavigate }) {
+  const { logout } = useContext(AuthContext);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogoutConfirm = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Error logging out:', error);
+      Alert.alert('Error', 'No se pudo cerrar sesión correctamente');
+    }
+  };
+
   const tabs = [
     { id: 'Home', label: 'Tus estadísticas', icon: 'home' },
     { id: 'Earn', label: 'Gana Puntos', icon: 'star' },
@@ -80,11 +93,48 @@ function WebSidebar({ activeTab, onNavigate }) {
       </ScrollView>
 
       <View style={styles.sidebarFooter}>
-        <TouchableOpacity style={styles.logoutBtn}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={() => setShowLogoutModal(true)}>
           <MaterialCommunityIcons name="logout" size={20} color={COLORS.white} />
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal de confirmación */}
+      <Modal
+        transparent
+        visible={showLogoutModal}
+        animationType="fade"
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.logoutModalContent}>
+            <View style={styles.modalIconContainer}>
+              <MaterialCommunityIcons name="logout" size={56} color={COLORS.error} />
+            </View>
+            <Text style={styles.logoutModalTitle}>Cerrar Sesión</Text>
+            <Text style={styles.logoutModalMessage}>¿Estás seguro que deseas salir de tu cuenta?</Text>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonCancel]} 
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonConfirm]} 
+                onPress={() => {
+                  setShowLogoutModal(false);
+                  handleLogoutConfirm();
+                }}
+              >
+                <Text style={styles.modalButtonTextConfirm}>Salir</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -532,34 +582,81 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: SPACING.lg,
   },
-  modalContent: {
-    width: '90%',
-    maxWidth: 600,
-    maxHeight: '90%',
+  logoutModalContent: {
+    width: '100%',
+    maxWidth: 400,
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 20,
-    position: 'relative',
+    borderRadius: 16,
+    padding: SPACING.xl * 1.5,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  modalClose: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    zIndex: 10,
-    width: 32,
-    height: 32,
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.error + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 16,
+    marginBottom: SPACING.lg,
   },
-  modalCloseText: {
-    fontSize: 20,
-    color: '#666',
-    fontWeight: 'bold',
+  logoutModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  logoutModalMessage: {
+    fontSize: 15,
+    color: COLORS.gray,
+    marginBottom: SPACING.xl,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: SPACING.md + 2,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: COLORS.white,
+    borderWidth: 2,
+    borderColor: COLORS.light,
+  },
+  modalButtonConfirm: {
+    backgroundColor: COLORS.error,
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalButtonTextCancel: {
+    color: COLORS.dark,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalButtonTextConfirm: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

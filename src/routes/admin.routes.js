@@ -120,6 +120,15 @@ router.post(
       },
     });
 
+    // Obtener el wallet del usuario
+    const userWallet = await prisma.wallet.findUnique({
+      where: { userId: submission.userId },
+    });
+
+    if (!userWallet) {
+      return errorResponse(res, 'Wallet del usuario no encontrado', 404);
+    }
+
     // Actualizar puntos del usuario en su wallet
     await prisma.wallet.update({
       where: { userId: submission.userId },
@@ -127,6 +136,16 @@ router.post(
         balance: {
           increment: submission.mission.points,
         },
+      },
+    });
+
+    // Crear transacción en el historial
+    await prisma.pointTransaction.create({
+      data: {
+        walletId: userWallet.id,
+        type: 'EARNED',
+        amount: submission.mission.points,
+        description: `Misión aprobada: ${submission.mission.name}`,
       },
     });
 

@@ -66,7 +66,7 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert(
       'Cerrar Sesión',
       '¿Estás seguro que deseas salir?',
@@ -80,7 +80,6 @@ export default function ProfileScreen({ navigation }) {
           onPress: async () => {
             try {
               await logout();
-              // La navegación se maneja automáticamente en AuthContext
             } catch (error) {
               console.error('Error logging out:', error);
               Alert.alert('Error', 'No se pudo cerrar sesión correctamente');
@@ -125,7 +124,7 @@ export default function ProfileScreen({ navigation }) {
             </View>
             <View style={styles.statCard}>
               <MaterialCommunityIcons name="chart-line" size={32} color={COLORS.primary} />
-              <Text style={styles.statValue}>+{stats.monthlyPoints}</Text>
+              <Text style={styles.statValue}>{stats.monthlyPoints.toLocaleString()}</Text>
               <Text style={styles.statLabel}>Este Mes</Text>
             </View>
             <View style={styles.statCard}>
@@ -173,11 +172,13 @@ export default function ProfileScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Botón de Logout */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <MaterialCommunityIcons name="logout" size={20} color={COLORS.white} />
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
+        {/* Botón de Logout - Solo Móvil */}
+        {Platform.OS !== 'web' && (
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <MaterialCommunityIcons name="logout" size={20} color={COLORS.white} />
+            <Text style={styles.logoutText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Puntos Ciudadanos v1.0.0</Text>
@@ -264,6 +265,11 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: SPACING.xl,
+    ...(Platform.OS === 'web' && {
+      maxWidth: 800,
+      alignSelf: 'center',
+      width: '100%',
+    }),
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.body1,
@@ -279,6 +285,11 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     alignItems: 'center',
     ...LAYOUT.shadowSmall,
+    ...(Platform.OS === 'web' && {
+      padding: SPACING.lg,
+      transition: 'all 0.2s ease',
+      cursor: 'pointer',
+    }),
   },
   optionIcon: {
     marginRight: SPACING.md,

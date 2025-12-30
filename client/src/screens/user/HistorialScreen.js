@@ -43,7 +43,7 @@ export default function HistorialScreen() {
         };
         
         const colorMap = {
-          EARNED: isMissionApproved ? '#FF9800' : '#4CAF50',
+          EARNED: '#4CAF50',
           SPENT: '#f44336',
           TRANSFER: '#2196F3',
         };
