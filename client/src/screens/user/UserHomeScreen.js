@@ -101,13 +101,16 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
       // Extraer y procesar transacciones
       const transactionsList = (transactionsRes.data?.data || []);
       const formattedActivities = transactionsList.slice(0, 3).map(t => {
+        // Detectar si es una misión aprobada
+        const isMissionApproved = t.type === 'EARNED' && t.description?.includes('Misión aprobada');
+        
         const iconMap = {
-          EARNED: 'plus-circle',
+          EARNED: isMissionApproved ? 'trophy' : 'plus-circle',
           SPENT: 'gift',
           TRANSFER: 'swap-horizontal',
         };
         const colorMap = {
-          EARNED: '#4CAF50',
+          EARNED: isMissionApproved ? '#FF9800' : '#4CAF50',
           SPENT: '#FF9800',
           TRANSFER: '#2196F3',
         };
@@ -128,10 +131,20 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
           timeString = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
         }
 
+        // Usar la descripción real de la transacción
+        let subtitle;
+        if (t.type === 'EARNED') {
+          subtitle = isMissionApproved ? 'Misión completada' : 'Puntos ganados';
+        } else if (t.type === 'SPENT') {
+          subtitle = 'Beneficio canjeado';
+        } else {
+          subtitle = 'Transferencia';
+        }
+
         return {
           id: t.id,
           title: t.description || 'Transacción',
-          description: t.type === 'EARNED' ? 'Puntos ganados' : t.type === 'SPENT' ? 'Beneficio canjeado' : 'Transferencia',
+          description: subtitle,
           points: `${t.type === 'EARNED' ? '+' : '-'}${t.amount}`,
           color: colorMap[t.type] || '#9C27B0',
           icon: iconMap[t.type] || 'history',

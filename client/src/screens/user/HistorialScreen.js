@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,72 +6,144 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme/theme';
+import { pointsAPI } from '../../services/api';
+import { getErrorMessage } from '../../utils/errorHandler';
 
 export default function HistorialScreen() {
-  const [historial] = useState([
-    {
-      id: 1,
-      title: 'Transporte Ecológico',
-      description: 'Uso de bicicleta compartida por 30 min.',
-      points: '+15',
-      color: '#4CAF50',
-      icon: 'bike',
-      date: '18 Diciembre 2025, 14:30',
-    },
-    {
-      id: 2,
-      title: 'Refill de Agua',
-      description: 'Estación de carga Parque Central.',
-      points: '+5',
-      color: '#2196F3',
-      icon: 'water',
-      date: '17 Diciembre 2025, 10:15',
-    },
-    {
-      id: 3,
-      title: 'Voluntariado',
-      description: 'Limpieza de parques.',
-      points: '+100',
-      color: '#9C27B0',
-      icon: 'hand-heart',
-      date: '16 Diciembre 2025, 09:00',
-    },
-    {
-      id: 4,
-      title: 'Canje Recompensa',
-      description: 'Descuento Pizzería Bella Napoli.',
-      points: '-200',
-      color: '#f44336',
-      icon: 'heart',
-      date: '15 Diciembre 2025, 18:45',
-    },
-    {
-      id: 5,
-      title: 'Donación de Ropa',
-      description: 'Donaste 5 prendas al centro comunitario.',
-      points: '+75',
-      color: '#FF9800',
-      icon: 'tshirt-crew',
-      date: '14 Diciembre 2025, 16:20',
-    },
-    {
-      id: 6,
-      title: 'Reciclaje de Vidrio',
-      description: 'Llevaste 10 botellas al punto limpio.',
-      points: '+50',
-      color: '#4CAF50',
-      icon: 'recycle',
-      date: '13 Diciembre 2025, 11:30',
-    },
-  ]);
+  const [historial, setHistorial] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadHistorial();
+  }, []);
+
+  const loadHistorial = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await pointsAPI.getTransactions(100, 0);
+      const transactions = response.data?.data || [];
+      
+      const formattedHistorial = transactions.map(t => {
+        const isMissionApproved = t.type === 'EARNED' && t.description?.includes('Misión aprobada');
+        
+        const iconMap = {
+          EARNED: isMissionApproved ? 'trophy' : 'plus-circle',
+          SPENT: 'gift',
+          TRANSFER: 'swap-horizontal',
+        };
+        
+        const colorMap = {
+          EARNED: isMissionApproved ? '#FF9800' : '#4CAF50',
+          SPENT: '#f44336',
+          TRANSFER: '#2196F3',
+        };
+
+        return {
+          id: t.id,
+          title: t.description || 'Transacción',
+          description: t.type === 'EARNED' 
+            ? (isMissionApproved ? 'Misión completada' : 'Puntos ganados')
+            : t.type === 'SPENT' 
+              ? 'Beneficio canjeado' 
+              : 'Transferencia',
+          points: `${t.type === 'EARNED' ? '+' : '-'}${t.amount}`,
+          color: colorMap[t.type] || '#9C27B0',
+          icon: iconMap[t.type] || 'history',
+          date: t.createdAt,
+          type: t.type,
+        };
+      });
+      
+      setHistorial(formattedHistorial);
+    } catch (err) {
+      const errorMessage = getErrorMessage(err);
+      setError(errorMessage);
+      console.error('[HistorialScreen] Error al cargar historial:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadHistorial();
+    setRefreshing(false);
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) {
+      return 'Hace un momento';
+    }
+    if (diffMins < 60) {
+      return `Hace ${diffMins} minuto${diffMins > 1 ? 's' : ''}`;
+    }
+    if (diffHours < 24) {
+      return `Hace ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+    }
+    if (diffDays < 7) {
+      return `Hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+    }
+    const day = date.getDate();
+    const month = date.toLocaleDateString('es-ES', { month: 'short' });
+    const year = date.getFullYear();
+    const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    
+    return `${day} ${month} ${year}, ${time}`;
+  };
+
+  if (loading) {
+    return (
+      <ScreenWrapper bgColor={COLORS.white} safeArea={false}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Cargando historial...</Text>
+        </View>
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper bgColor={COLORS.white} safeArea={false} padding={0}>
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}>
+      <ScrollView 
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {error && (
+          <View style={styles.errorContainer}>
+            <MaterialCommunityIcons name="alert-circle" size={24} color={COLORS.error} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadHistorial}>
+              <Text style={styles.retryText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!error && historial.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <MaterialCommunityIcons name="history" size={64} color={COLORS.gray} />
+            <Text style={styles.emptyText}>No hay transacciones aún</Text>
+            <Text style={styles.emptySubtext}>Comienza a ganar puntos completando misiones</Text>
+          </View>
+        )}
+
         <View style={styles.listContainer}>
           {historial.map((item) => (
             <View key={item.id} style={styles.historialItem}>
@@ -81,9 +153,21 @@ export default function HistorialScreen() {
               <View style={styles.itemContent}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
                 <Text style={styles.itemDescription}>{item.description}</Text>
-                <Text style={styles.itemDate}>{item.date}</Text>
+                <Text style={styles.itemDate}>{formatDate(item.date)}</Text>
               </View>
-              <Text style={[styles.itemPoints, { color: item.color }]}>{item.points}</Text>
+              <View style={styles.pointsContainer}>
+                <Text style={[styles.itemPoints, { color: item.color }]}>{item.points}</Text>
+                {item.type === 'EARNED' && (
+                  <View style={[styles.typeBadge, { backgroundColor: '#E8F5E9' }]}>
+                    <Text style={[styles.typeBadgeText, { color: '#4CAF50' }]}>Ganado</Text>
+                  </View>
+                )}
+                {item.type === 'SPENT' && (
+                  <View style={[styles.typeBadge, { backgroundColor: '#FFEBEE' }]}>
+                    <Text style={[styles.typeBadgeText, { color: '#f44336' }]}>Gastado</Text>
+                  </View>
+                )}
+              </View>
             </View>
           ))}
         </View>
@@ -97,18 +181,51 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.md,
   },
-  header: {
-    marginBottom: SPACING.xl,
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xl * 2,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: SPACING.sm,
-  },
-  subtitle: {
-    fontSize: 14,
+  loadingText: {
+    marginTop: SPACING.md,
     color: COLORS.gray,
+    fontSize: TYPOGRAPHY.body2,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+    gap: SPACING.md,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: TYPOGRAPHY.body2,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: COLORS.white,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl * 2,
+    gap: SPACING.md,
+  },
+  emptyText: {
+    fontSize: TYPOGRAPHY.h6,
+    fontWeight: '600',
+    color: COLORS.dark,
+  },
+  emptySubtext: {
+    fontSize: TYPOGRAPHY.body2,
+    color: COLORS.gray,
+    textAlign: 'center',
   },
   listContainer: {
     gap: SPACING.md,
@@ -150,8 +267,21 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontWeight: '500',
   },
+  pointsContainer: {
+    alignItems: 'flex-end',
+    gap: SPACING.xs,
+  },
   itemPoints: {
-    fontSize: 14,
     fontWeight: '700',
+    fontSize: 16,
+  },
+  typeBadge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

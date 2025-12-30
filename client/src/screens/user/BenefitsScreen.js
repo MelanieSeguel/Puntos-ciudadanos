@@ -214,38 +214,40 @@ export default function BenefitsScreen({ navigation: navigationProp }) {
       <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}>
         {/* Filtros */}
         <View style={styles.filtersContainer}>
-          <View style={styles.filterIcon}>
-            <MaterialCommunityIcons name="filter-variant" size={20} color={COLORS.primary} />
-          </View>
-          <Text style={styles.filterLabel}>Filtrar Recompensas</Text>
-          <View style={styles.filterButtons}>
-            {['Todos', 'Comida', 'Servicios'].map((filter) => {
-              const isActive = activeFilter === filter;
-              const count = filter === 'Todos' ? allBenefits.length : 
-                           allBenefits.filter(b => {
-                             if (filter === 'Comida') return ['COMIDA', 'POSTRE', 'BEBIDA'].includes(b.category);
-                             if (filter === 'Servicios') return b.category === 'SERVICIO';
-                             return false;
-                           }).length;
-              
-              return (
-                <TouchableOpacity
-                  key={filter}
-                  style={[styles.filterButton, isActive && styles.filterButtonActive]}
-                  onPress={() => applyFilter(filter)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.filterButtonText, isActive && styles.filterButtonTextActive]}>
-                    {filter}
-                  </Text>
-                  {filter === 'Todos' && (
-                    <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
-                      <Text style={styles.countText}>{count}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+          <View style={styles.filterHeader}>
+            <View style={styles.filterTitleRow}>
+              <MaterialCommunityIcons name="filter-variant" size={20} color={COLORS.primary} />
+              <Text style={styles.filterLabel}>Filtrar Recompensas</Text>
+            </View>
+            <View style={styles.filterButtons}>
+              {['Todos', 'Comida', 'Servicios'].map((filter) => {
+                const isActive = activeFilter === filter;
+                const count = filter === 'Todos' ? allBenefits.length : 
+                             allBenefits.filter(b => {
+                               if (filter === 'Comida') return ['COMIDA', 'POSTRE', 'BEBIDA'].includes(b.category);
+                               if (filter === 'Servicios') return b.category === 'SERVICIO';
+                               return false;
+                             }).length;
+                
+                return (
+                  <TouchableOpacity
+                    key={filter}
+                    style={[styles.filterButton, isActive && styles.filterButtonActive]}
+                    onPress={() => applyFilter(filter)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.filterButtonText, isActive && styles.filterButtonTextActive]}>
+                      {filter}
+                    </Text>
+                    {filter === 'Todos' && (
+                      <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
+                        <Text style={styles.countText}>{count}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
 
@@ -294,19 +296,27 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
     paddingTop: SPACING.sm,
   },
-  filterIcon: {
-    marginBottom: SPACING.xs,
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.md,
+  },
+  filterTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
   filterLabel: {
     fontSize: TYPOGRAPHY.body2,
     color: COLORS.gray,
     fontWeight: '600',
-    marginBottom: SPACING.sm,
   },
   filterButtons: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    flexWrap: 'wrap',
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   filterButton: {
     flexDirection: 'row',

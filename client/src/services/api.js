@@ -93,7 +93,7 @@ export const userAPI = {
 export const pointsAPI = {
   redeemBenefit: (benefitId) => api.post('/points/redeem', { benefitId }),
   getTransactions: (limit = 10, offset = 0) => 
-    api.get(`/points/transactions?limit=${limit}&offset=${offset}`),
+    api.get(`/points/transactions?limit=${limit}&offset=${offset}&t=${Date.now()}`),
 };
 
 // Servicios de beneficios

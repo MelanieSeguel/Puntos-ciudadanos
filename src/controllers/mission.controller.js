@@ -7,6 +7,8 @@ import { successResponse, errorResponse } from '../utils/response.js';
  * Obtener todas las misiones disponibles
  */
 export const getAvailableMissions = asyncHandler(async (req, res) => {
+  const userId = req.user?.id; // Usuario autenticado (puede ser undefined si no está autenticado)
+
   const missions = await prisma.mission.findMany({
     where: {
       active: true,
@@ -20,6 +22,7 @@ export const getAvailableMissions = asyncHandler(async (req, res) => {
       cooldownDays: true,
       evidenceType: true,
       active: true,
+      expiresAt: true,
       createdAt: true,
     },
     orderBy: {
@@ -27,11 +30,48 @@ export const getAvailableMissions = asyncHandler(async (req, res) => {
     },
   });
 
+  // Si hay un usuario autenticado, calcular cooldownUntil para cada misión
+  let missionsWithCooldown = missions;
+  if (userId) {
+    missionsWithCooldown = await Promise.all(
+      missions.map(async (mission) => {
+        // Buscar la última completación de esta misión por este usuario
+        const lastCompletion = await prisma.missionCompletion.findFirst({
+          where: {
+            userId,
+            missionId: mission.id,
+          },
+          orderBy: {
+            completedAt: 'desc',
+          },
+        });
+
+        let cooldownUntil = null;
+        if (lastCompletion && mission.cooldownDays > 0) {
+          // Calcular la fecha hasta la cual está en cooldown
+          const completionDate = new Date(lastCompletion.completedAt);
+          const cooldownEndDate = new Date(completionDate);
+          cooldownEndDate.setDate(cooldownEndDate.getDate() + mission.cooldownDays);
+          
+          // Solo incluir cooldownUntil si está en el futuro
+          if (cooldownEndDate > new Date()) {
+            cooldownUntil = cooldownEndDate.toISOString();
+          }
+        }
+
+        return {
+          ...mission,
+          cooldownUntil,
+        };
+      })
+    );
+  }
+
   successResponse(
     res,
     {
-      missions,
-      total: missions.length,
+      missions: missionsWithCooldown,
+      total: missionsWithCooldown.length,
     },
     'Misiones obtenidas exitosamente',
     200

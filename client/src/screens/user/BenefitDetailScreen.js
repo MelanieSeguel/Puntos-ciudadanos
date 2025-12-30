@@ -161,7 +161,9 @@ export default function BenefitDetailScreen({ route, navigation }) {
           </View>
           <Text style={styles.benefitName}>{data.title}</Text>
           {data.merchant && (
-            <Text style={styles.provider}>{data.merchant}</Text>
+            <Text style={styles.provider}>
+              {data.merchant?.merchantProfile?.storeName || data.merchant?.name || 'Comercio'}
+            </Text>
           )}
 
           <View style={styles.pointsBadge}>
