@@ -8,7 +8,6 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, ActivityI
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
-import WebHeader from '../../components/WebHeader';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
 import { missionsAPI } from '../../services/api';
 
@@ -104,7 +103,6 @@ function EarnScreenComponent({ navigation: navigationProp }) {
 
   return (
     <ScreenWrapper bgColor={COLORS.light} safeArea={false} maxWidth={false} padding={0}>
-      <WebHeader title="Gana Puntos" />
       <ScrollView
         style={{ flex: 1, width: '100%', minHeight: '100vh' }}
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 0, minHeight: '100vh', width: '100%', paddingTop: Platform.OS === 'web' ? 90 : 0 }}

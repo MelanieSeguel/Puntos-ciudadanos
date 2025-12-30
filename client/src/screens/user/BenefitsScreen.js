@@ -7,7 +7,6 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
-import WebHeader from '../../components/WebHeader';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
 
 export default function BenefitsScreen() {
@@ -35,7 +34,6 @@ export default function BenefitsScreen() {
 
   return (
     <ScreenWrapper bgColor={COLORS.light} safeArea={false} padding={0}>
-      <WebHeader title="Beneficios Disponibles" />
       <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}>
         <FlatList
           data={benefits}

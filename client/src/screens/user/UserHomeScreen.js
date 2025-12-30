@@ -12,8 +12,8 @@ import {
   Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
-import WebHeader from '../../components/WebHeader';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme/theme';
 import { walletAPI, benefitsAPI, pointsAPI } from '../../services/api';
 import { getErrorMessage } from '../../utils/errorHandler';
@@ -21,7 +21,10 @@ import { AuthContext } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
-export default function UserHomeScreen({ navigation }) {
+export default function UserHomeScreen({ navigation: navigationProp }) {
+  // En web se pasa como prop, en móvil usar el hook
+  const hookNavigation = useNavigation();
+  const navigation = Platform.OS === 'web' && navigationProp ? navigationProp : hookNavigation;
   const { authState, logout } = useContext(AuthContext);
 
   const [userData, setUserData] = useState({ name: 'Usuario', email: '' });
@@ -169,8 +172,6 @@ export default function UserHomeScreen({ navigation }) {
 
   return (
     <ScreenWrapper bgColor={COLORS.light} padding={0} maxWidth={Platform.OS === 'web'} safeArea={Platform.OS !== 'web'}>
-      <WebHeader title="Tus Estadísticas" />
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -200,9 +201,9 @@ export default function UserHomeScreen({ navigation }) {
             <View style={styles.balanceActions}>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.primaryBtn]}
-                onPress={() => navigation.navigate('Earn')}
+                onPress={() => navigation.navigate('Benefits')}
               >
-                <MaterialCommunityIcons name="plus" size={18} color={COLORS.white} />
+                <MaterialCommunityIcons name="gift" size={18} color={COLORS.white} />
                 <Text style={styles.primaryBtnText}>Canjear</Text>
               </TouchableOpacity>
             </View>
@@ -234,7 +235,7 @@ export default function UserHomeScreen({ navigation }) {
             <View style={styles.activityCard}>
               <View style={styles.activityHeader}>
                 <Text style={styles.activityTitle}>Actividad Reciente</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Historial')}>
                   <Text style={styles.seeAllLink}>VER TODO</Text>
                 </TouchableOpacity>
               </View>

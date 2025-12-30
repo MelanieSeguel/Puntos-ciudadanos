@@ -20,6 +20,7 @@ import MissionDetailScreen from '../screens/user/MissionDetailScreen';
 import MissionSubmissionScreen from '../screens/user/MissionSubmissionScreen';
 import BenefitDetailScreen from '../screens/user/BenefitDetailScreen';
 import QRCodeScreen from '../screens/user/QRCodeScreen';
+import WebHeader from '../components/WebHeader';
 import { COLORS, SPACING } from '../theme/theme';
 
 const Stack = createNativeStackNavigator();
@@ -121,10 +122,16 @@ function WebLayout() {
     }
   };
 
+  const homeNavigationMock = {
+    navigate: (screen) => {
+      setActiveTab(screen);
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'Home':
-        return <UserHomeScreen />;
+        return <UserHomeScreen navigation={homeNavigationMock} />;
       case 'Benefits':
         return <BenefitsScreen />;
       case 'Earn':
@@ -138,10 +145,24 @@ function WebLayout() {
     }
   };
 
+  const getPageTitle = () => {
+    const titles = {
+      'Home': 'Tus Estadísticas',
+      'Earn': 'Gana Puntos',
+      'Benefits': 'Beneficios Disponibles',
+      'Historial': 'Mi Historial',
+      'Profile': 'Configuración',
+    };
+    return titles[activeTab] || 'Puntos Ciudadanos';
+  };
+
   return (
     <View style={styles.webContainer}>
       <WebSidebar activeTab={activeTab} onNavigate={setActiveTab} />
-      <View style={styles.webContent}>{renderContent()}</View>
+      <View style={styles.webContent}>
+        <WebHeader title={getPageTitle()} />
+        {renderContent()}
+      </View>
       
       {/* Modal para MissionSubmission */}
       <Modal
