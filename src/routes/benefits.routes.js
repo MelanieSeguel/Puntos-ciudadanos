@@ -32,7 +32,20 @@ router.get('/', authenticate, async (req, res) => {
         stock: true,
         category: true,
         active: true,
+        imageUrl: true,
         createdAt: true,
+        merchant: {
+          select: {
+            id: true,
+            name: true,
+            merchantProfile: {
+              select: {
+                storeName: true,
+                address: true,
+              },
+            },
+          },
+        },
       },
     });
 

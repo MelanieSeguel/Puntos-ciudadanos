@@ -3,7 +3,7 @@
  * Pantalla que muestra información completa de un beneficio antes de canjearlo
  */
 
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,83 +16,130 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
+import { pointsAPI, walletAPI } from '../../services/api';
+import { AuthContext } from '../../context/AuthContext';
+import { getErrorMessage } from '../../utils/errorHandler';
 
 export default function BenefitDetailScreen({ route, navigation }) {
-  const { benefitId, benefit } = route.params || {};
+  const { benefitId, benefit, userBalance: initialBalance } = route.params || {};
+  const { authState } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [isRedeeming, setIsRedeeming] = useState(false);
+  const [userBalance, setUserBalance] = useState(initialBalance || 0);
 
-  React.useEffect(() => {
-    // Por hacer: obtener datos completos del beneficio
-    // para obtener datos completos si no está en route.params
-  }, [benefitId]);
+  useEffect(() => {
+    // Cargar balance actualizado
+    loadBalance();
+  }, []);
 
-  const data = benefit || {
-    id: 'benefit_001',
-    name: 'Descuento Supermercado',
-    provider: 'Supermercado Central',
-    description: 'Obtén un descuento del 10% en toda tu compra en cualquier sucursal',
-    pointsCost: 150,
-    discount: '10%',
-    discountType: 'PERCENTAGE',
-    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    stock: 45,
-    maxStock: 100,
-    terms: [
-      'Válido en todas las sucursales',
-      'No acumulable con otras promociones',
-      'Válido por 30 días desde el canje',
-      'Presentar código QR en caja',
-    ],
-    requirements: [
-      'Mínimo 150 puntos disponibles',
-      'Usuario verificado',
-      'Sin beneficios activos del mismo tipo',
-    ],
-    redeemCount: 155,
-    rating: 4.5,
+  const loadBalance = async () => {
+    try {
+      const response = await walletAPI.getBalance();
+      const user = response.data?.data;
+      setUserBalance(user?.wallet?.balance || 0);
+    } catch (error) {
+      console.error('[BenefitDetail] Error al cargar balance:', error);
+    }
   };
 
-  const userBalance = 250; // Por hacer: obtener del contexto de autenticación
+  const data = benefit || {
+    id: benefitId,
+    title: 'Beneficio',
+    description: 'Descripción no disponible',
+    pointsCost: 0,
+    stock: 0,
+    active: false,
+  };
 
-  const canRedeem = userBalance >= data.pointsCost && data.stock > 0;
+  const canRedeem = userBalance >= data.pointsCost && data.stock > 0 && data.active;
+  const insufficientBalance = userBalance < data.pointsCost;
+  const noStock = data.stock <= 0;
 
   const handleRedeem = () => {
-    if (!canRedeem) return;
+    if (!canRedeem) {
+      if (insufficientBalance) {
+        Alert.alert(
+          'Saldo Insuficiente',
+          `Necesitas ${data.pointsCost} puntos para canjear este beneficio.\n\nTu saldo actual: ${userBalance} puntos\nFaltan: ${data.pointsCost - userBalance} puntos`,
+          [{ text: 'Entendido', style: 'default' }]
+        );
+      } else if (noStock) {
+        Alert.alert(
+          'Sin Stock',
+          'Este beneficio ya no está disponible en este momento.',
+          [{ text: 'Entendido', style: 'default' }]
+        );
+      }
+      return;
+    }
 
     Alert.alert(
       'Confirmar Canje',
-      `¿Deseas canjear "${data.name}" por ${data.pointsCost} puntos?`,
+      `¿Deseas canjear "${data.title}" por ${data.pointsCost} puntos?\n\nSaldo actual: ${userBalance} pts\nSaldo después: ${userBalance - data.pointsCost} pts`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Confirmar',
+          text: 'Canjear',
           style: 'default',
-          onPress: async () => {
-            try {
-              setIsRedeeming(true);
-              // Por hacer: procesar canje de beneficio
-              // const response = await benefitsAPI.redeem(benefitId);
-              
-              await new Promise(resolve => setTimeout(resolve, 1500));
-              
-              // navigation.navigate('QRCode', {
-              //   benefitId: data.id,
-              //   benefitName: data.name,
-              //   code: response.data.code,
-              // });
-              
-              alert('Beneficio canjeado exitosamente');
-              navigation.goBack();
-            } catch (error) {
-              Alert.alert('Error', error.message || 'No se pudo canjear el beneficio');
-            } finally {
-              setIsRedeeming(false);
-            }
-          },
+          onPress: processRedeem,
         },
       ]
     );
+  };
+
+  const processRedeem = async () => {
+    try {
+      setIsRedeeming(true);
+      
+      const response = await pointsAPI.redeemBenefit(data.id);
+      
+      // Actualizar balance local
+      const newBalance = userBalance - data.pointsCost;
+      setUserBalance(newBalance);
+      
+      Alert.alert(
+        '¡Beneficio Canjeado!',
+        `Has canjeado exitosamente "${data.title}".\n\nNuevo saldo: ${newBalance} puntos`,
+        [
+          {
+            text: 'Ver QR',
+            onPress: () => {
+              navigation.replace('QRCode', {
+                transactionId: response.data?.data?.transaction?.id || response.data?.data?.id,
+                benefitName: data.title,
+              });
+            },
+          },
+          {
+            text: 'Volver',
+            style: 'cancel',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('[BenefitDetail] Error al canjear:', error);
+      const errorMessage = getErrorMessage(error);
+      
+      if (error.response?.status === 400 || error.response?.status === 402) {
+        Alert.alert(
+          'No se pudo canjear',
+          errorMessage || 'No tienes suficientes puntos para este beneficio.',
+          [{ text: 'Entendido', style: 'default' }]
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          errorMessage || 'Ocurrió un error al canjear el beneficio. Intenta nuevamente.',
+          [{ text: 'Entendido', style: 'default' }]
+        );
+      }
+      
+      // Recargar balance por si cambió
+      await loadBalance();
+    } finally {
+      setIsRedeeming(false);
+    }
   };
 
   return (
@@ -112,12 +159,44 @@ export default function BenefitDetailScreen({ route, navigation }) {
           <View style={styles.iconContainer}>
             <MaterialCommunityIcons name="gift" size={48} color={COLORS.primary} />
           </View>
-          <Text style={styles.benefitName}>{data.name}</Text>
-          <Text style={styles.provider}>{data.provider}</Text>
+          <Text style={styles.benefitName}>{data.title}</Text>
+          {data.merchant && (
+            <Text style={styles.provider}>{data.merchant}</Text>
+          )}
 
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>{data.discount} Descuento</Text>
+          <View style={styles.pointsBadge}>
+            <MaterialCommunityIcons name="star" size={20} color={COLORS.white} />
+            <Text style={styles.pointsText}>{data.pointsCost} puntos</Text>
           </View>
+        </View>
+
+        {/* Balance del usuario */}
+        <View style={styles.balanceSection}>
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceLabel}>Tu saldo:</Text>
+            <Text style={[
+              styles.balanceAmount,
+              insufficientBalance && styles.balanceInsufficient
+            ]}>
+              {userBalance} pts
+            </Text>
+          </View>
+          {insufficientBalance && (
+            <View style={styles.warningBox}>
+              <MaterialCommunityIcons name="alert-circle" size={20} color={COLORS.warning} />
+              <Text style={styles.warningText}>
+                Te faltan {data.pointsCost - userBalance} puntos
+              </Text>
+            </View>
+          )}
+          {noStock && (
+            <View style={[styles.warningBox, styles.errorBox]}>
+              <MaterialCommunityIcons name="package-variant-closed" size={20} color={COLORS.error} />
+              <Text style={[styles.warningText, styles.errorText]}>
+                Sin stock disponible
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Descripción */}
@@ -130,75 +209,34 @@ export default function BenefitDetailScreen({ route, navigation }) {
         <View style={styles.infoRow}>
           <View style={styles.infoCard}>
             <MaterialCommunityIcons name="star" size={28} color={COLORS.warning} />
-            <Text style={styles.infoLabel}>Puntos</Text>
-            <Text style={styles.infoValue}>{data.pointsCost}</Text>
+            <Text style={styles.infoLabel}>Costo</Text>
+            <Text style={styles.infoValue}>{data.pointsCost} pts</Text>
           </View>
 
           <View style={styles.infoCard}>
-            <MaterialCommunityIcons name="package" size={28} color={COLORS.info} />
-            <Text style={styles.infoLabel}>Disponibles</Text>
-            <Text style={styles.infoValue}>{data.stock}</Text>
-          </View>
-
-          <View style={styles.infoCard}>
-            <MaterialCommunityIcons name="star-circle" size={28} color={COLORS.success} />
-            <Text style={styles.infoLabel}>Canjeados</Text>
-            <Text style={styles.infoValue}>{data.redeemCount}</Text>
-          </View>
-        </View>
-
-        {/* Validez */}
-        <View style={styles.validitySection}>
-          <MaterialCommunityIcons name="calendar-clock" size={24} color={COLORS.info} />
-          <View style={styles.validityInfo}>
-            <Text style={styles.validityLabel}>Válido hasta</Text>
-            <Text style={styles.validityDate}>
-              {data.validUntil.toLocaleDateString('es-ES')}
+            <MaterialCommunityIcons 
+              name="package" 
+              size={28} 
+              color={noStock ? COLORS.error : COLORS.info} 
+            />
+            <Text style={styles.infoLabel}>Stock</Text>
+            <Text style={[
+              styles.infoValue,
+              noStock && styles.infoValueError
+            ]}>
+              {data.stock}
             </Text>
           </View>
-        </View>
 
-        {/* Términos y Condiciones */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Términos y Condiciones</Text>
-          {data.terms.map((term, idx) => (
-            <View key={idx} style={styles.termItem}>
-              <MaterialCommunityIcons name="check-circle" size={16} color={COLORS.success} />
-              <Text style={styles.termText}>{term}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Requisitos */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Requisitos</Text>
-          {data.requirements.map((req, idx) => (
-            <View key={idx} style={styles.requirementItem}>
-              <MaterialCommunityIcons
-                name="check-circle"
-                size={16}
-                color={COLORS.success}
-              />
-              <Text style={styles.requirementText}>{req}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Rating */}
-        <View style={styles.ratingSection}>
-          <View style={styles.ratingStars}>
-            {[...Array(5)].map((_, i) => (
-              <MaterialCommunityIcons
-                key={i}
-                name={i < Math.floor(data.rating) ? 'star' : 'star-outline'}
-                size={20}
-                color={COLORS.warning}
-              />
-            ))}
+          <View style={styles.infoCard}>
+            <MaterialCommunityIcons 
+              name={data.active ? "check-circle" : "close-circle"} 
+              size={28} 
+              color={data.active ? COLORS.success : COLORS.error} 
+            />
+            <Text style={styles.infoLabel}>Estado</Text>
+            <Text style={styles.infoValue}>{data.active ? 'Activo' : 'Inactivo'}</Text>
           </View>
-          <Text style={styles.ratingText}>
-            {data.rating} ({data.redeemCount} opiniones)
-          </Text>
         </View>
 
         {/* Espaciado */}
@@ -207,35 +245,27 @@ export default function BenefitDetailScreen({ route, navigation }) {
 
       {/* Botón Canjear */}
       <View style={styles.footer}>
-        {!canRedeem && (
-          <View style={styles.warningBox}>
-            {userBalance < data.pointsCost ? (
-              <>
-                <MaterialCommunityIcons name="alert-circle" size={16} color={COLORS.danger} />
-                <Text style={styles.warningText}>
-                  Te faltan {data.pointsCost - userBalance} puntos
-                </Text>
-              </>
-            ) : (
-              <>
-                <MaterialCommunityIcons name="alert-circle" size={16} color={COLORS.danger} />
-                <Text style={styles.warningText}>Sin stock disponible</Text>
-              </>
-            )}
-          </View>
-        )}
-
         <TouchableOpacity
-          style={[styles.redeemButton, !canRedeem && styles.redeemButtonDisabled]}
+          style={[
+            styles.redeemButton,
+            !canRedeem && styles.redeemButtonDisabled,
+          ]}
           onPress={handleRedeem}
           disabled={!canRedeem || isRedeeming}
         >
           {isRedeeming ? (
-            <ActivityIndicator color={COLORS.white} />
+            <>
+              <ActivityIndicator color={COLORS.white} size="small" />
+              <Text style={styles.redeemButtonText}>Canjeando...</Text>
+            </>
           ) : (
             <>
               <MaterialCommunityIcons name="gift" size={20} color={COLORS.white} />
-              <Text style={styles.redeemButtonText}>Canjear Ahora</Text>
+              <Text style={styles.redeemButtonText}>
+                {insufficientBalance ? `Faltan ${data.pointsCost - userBalance} pts` : 
+                 noStock ? 'Sin Stock' :
+                 'Canjear Ahora'}
+              </Text>
             </>
           )}
         </TouchableOpacity>
@@ -287,6 +317,65 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginBottom: SPACING.md,
   },
+  pointsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 20,
+  },
+  pointsText: {
+    fontSize: TYPOGRAPHY.body1,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  balanceSection: {
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.lg,
+    backgroundColor: COLORS.white,
+    padding: SPACING.md,
+    borderRadius: LAYOUT.borderRadius.md,
+    ...LAYOUT.shadowSmall,
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  balanceLabel: {
+    fontSize: TYPOGRAPHY.body1,
+    color: COLORS.gray,
+  },
+  balanceAmount: {
+    fontSize: TYPOGRAPHY.h5,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  balanceInsufficient: {
+    color: COLORS.error,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    marginTop: SPACING.sm,
+    padding: SPACING.sm,
+    backgroundColor: '#fff3cd',
+    borderRadius: LAYOUT.borderRadius.sm,
+  },
+  warningText: {
+    fontSize: TYPOGRAPHY.caption,
+    color: COLORS.warning,
+    fontWeight: '600',
+  },
+  errorBox: {
+    backgroundColor: '#f8d7da',
+  },
+  errorText: {
+    color: COLORS.error,
+  },
   discountBadge: {
     backgroundColor: '#fff3cd',
     paddingVertical: SPACING.sm,
@@ -337,6 +426,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.dark,
     marginTop: SPACING.xs,
+  },
+  infoValueError: {
+    color: COLORS.error,
   },
   validitySection: {
     marginHorizontal: SPACING.md,

@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -147,6 +148,70 @@ async function main() {
     });
 
     console.log('Comercio de prueba creado (Mati Mechada)');
+
+    // ============================================
+    // CREAR BENEFICIOS
+    // ============================================
+
+    const benefits = await Promise.all([
+      prisma.benefit.create({
+        data: {
+          merchantId: merchant.id,
+          title: 'Descuento 20% en Compras',
+          description: 'Obtén un 20% de descuento en todas tus compras en nuestra tienda',
+          pointsCost: 100,
+          stock: 50,
+          active: true,
+          category: 'DESCUENTO',
+        },
+      }),
+      prisma.benefit.create({
+        data: {
+          merchantId: merchant.id,
+          title: 'Café Gratis',
+          description: 'Disfruta de un café americano o espresso totalmente gratis',
+          pointsCost: 50,
+          stock: 100,
+          active: true,
+          category: 'BEBIDA',
+        },
+      }),
+      prisma.benefit.create({
+        data: {
+          merchantId: merchant.id,
+          title: 'Combo 2x1 en Sándwich',
+          description: 'Lleva 2 sándwiches mechada por el precio de 1',
+          pointsCost: 150,
+          stock: 30,
+          active: true,
+          category: 'COMIDA',
+        },
+      }),
+      prisma.benefit.create({
+        data: {
+          merchantId: merchant.id,
+          title: 'Postre del Día Gratis',
+          description: 'Disfruta del postre del día sin costo adicional',
+          pointsCost: 75,
+          stock: 40,
+          active: true,
+          category: 'POSTRE',
+        },
+      }),
+      prisma.benefit.create({
+        data: {
+          merchantId: merchant.id,
+          title: 'Envío Gratis',
+          description: 'Envío gratuito en pedidos a domicilio',
+          pointsCost: 200,
+          stock: 20,
+          active: true,
+          category: 'SERVICIO',
+        },
+      }),
+    ]);
+
+    console.log('Beneficios creados:', benefits.length);
 
     // ============================================
     // CREAR MISIONES

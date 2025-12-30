@@ -96,6 +96,8 @@ function WebLayout() {
   const [activeTab, setActiveTab] = useState('Home');
   const [missionSubmissionVisible, setMissionSubmissionVisible] = useState(false);
   const [missionSubmissionParams, setMissionSubmissionParams] = useState(null);
+  const [benefitDetailVisible, setBenefitDetailVisible] = useState(false);
+  const [benefitDetailParams, setBenefitDetailParams] = useState(null);
 
   const handleMissionPress = (params) => {
     setMissionSubmissionParams(params);
@@ -109,15 +111,31 @@ function WebLayout() {
     }, 300);
   };
 
+  const handleBenefitPress = (params) => {
+    setBenefitDetailParams(params);
+    setBenefitDetailVisible(true);
+  };
+
+  const handleCloseBenefitDetail = () => {
+    setBenefitDetailVisible(false);
+    setTimeout(() => {
+      setBenefitDetailParams(null);
+    }, 300);
+  };
+
   const earnNavigationMock = {
     navigate: (screen, params) => {
       if (screen === 'MissionSubmission') {
         handleMissionPress(params);
+      } else if (screen === 'BenefitDetail') {
+        handleBenefitPress(params);
       }
     },
     push: (screen, params) => {
       if (screen === 'MissionSubmission') {
         handleMissionPress(params);
+      } else if (screen === 'BenefitDetail') {
+        handleBenefitPress(params);
       }
     }
   };
@@ -125,6 +143,14 @@ function WebLayout() {
   const homeNavigationMock = {
     navigate: (screen) => {
       setActiveTab(screen);
+    }
+  };
+
+  const benefitsNavigationMock = {
+    navigate: (screen, params) => {
+      if (screen === 'BenefitDetail') {
+        handleBenefitPress(params);
+      }
     }
   };
 
@@ -137,7 +163,7 @@ function WebLayout() {
           <UserHomeScreen navigation={homeNavigationMock} />
         </View>
         <View style={activeTab === 'Benefits' ? styles.activeScreen : styles.hiddenScreen}>
-          <BenefitsScreen />
+          <BenefitsScreen navigation={benefitsNavigationMock} />
         </View>
         <View style={activeTab === 'Earn' ? styles.activeScreen : styles.hiddenScreen}>
           <EarnScreen navigation={earnNavigationMock} />
@@ -190,6 +216,39 @@ function WebLayout() {
               <MissionSubmissionScreen 
                 route={{ params: missionSubmissionParams }}
                 navigation={{ goBack: handleCloseMissionSubmission }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal para BenefitDetail */}
+      <Modal
+        visible={benefitDetailVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseBenefitDetail}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.modalClose}
+              onPress={handleCloseBenefitDetail}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+            {benefitDetailParams && (
+              <BenefitDetailScreen 
+                route={{ params: benefitDetailParams }}
+                navigation={{ 
+                  goBack: handleCloseBenefitDetail,
+                  replace: (screen, params) => {
+                    if (screen === 'QRCode') {
+                      handleCloseBenefitDetail();
+                      // Aquí podrías mostrar otro modal para el QR si lo necesitas
+                    }
+                  }
+                }}
               />
             )}
           </View>
