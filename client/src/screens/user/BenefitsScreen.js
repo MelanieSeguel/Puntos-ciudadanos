@@ -289,12 +289,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: Platform.OS === 'web' ? SPACING.lg : SPACING.md,
+    ...(Platform.OS === 'web' && {
+      maxWidth: 1400,
+      alignSelf: 'center',
+      width: '100%',
+    }),
   },
   
   // Filtros
   filtersContainer: {
     marginBottom: SPACING.lg,
     paddingTop: SPACING.sm,
+    ...(Platform.OS === 'web' && {
+      paddingVertical: SPACING.md,
+    }),
   },
   filterHeader: {
     flexDirection: 'row',
@@ -377,6 +385,9 @@ const styles = StyleSheet.create({
       flex: 1,
       maxWidth: '32%',
       marginHorizontal: '0.5%',
+      minHeight: 320,
+      transition: 'all 0.2s ease',
+      cursor: 'pointer',
     } : {
       width: '100%',
     }),

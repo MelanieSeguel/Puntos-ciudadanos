@@ -17,9 +17,11 @@ import { getErrorMessage } from '../../utils/errorHandler';
 
 export default function HistorialScreen() {
   const [historial, setHistorial] = useState([]);
+  const [allHistorial, setAllHistorial] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('Todos');
 
   useEffect(() => {
     loadHistorial();
@@ -64,6 +66,7 @@ export default function HistorialScreen() {
         };
       });
       
+      setAllHistorial(formattedHistorial);
       setHistorial(formattedHistorial);
     } catch (err) {
       const errorMessage = getErrorMessage(err);
@@ -78,6 +81,18 @@ export default function HistorialScreen() {
     setRefreshing(true);
     await loadHistorial();
     setRefreshing(false);
+  };
+
+  const applyFilter = (filter) => {
+    setActiveFilter(filter);
+    
+    if (filter === 'Todos') {
+      setHistorial(allHistorial);
+      return;
+    }
+
+    const filtered = allHistorial.filter(item => item.type === filter);
+    setHistorial(filtered);
   };
 
   const formatDate = (dateString) => {
@@ -111,7 +126,7 @@ export default function HistorialScreen() {
 
   if (loading) {
     return (
-      <ScreenWrapper bgColor={COLORS.white} safeArea={false}>
+      <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Cargando historial...</Text>
@@ -121,11 +136,47 @@ export default function HistorialScreen() {
   }
 
   return (
-    <ScreenWrapper bgColor={COLORS.white} safeArea={false} padding={0}>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false} padding={0}>
       <ScrollView 
         contentContainerStyle={[styles.scrollContent, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        {/* Filtros */}
+        <View style={styles.filtersContainer}>
+          <View style={styles.filterHeader}>
+            <View style={styles.filterTitleRow}>
+              <MaterialCommunityIcons name="filter-variant" size={20} color={COLORS.primary} />
+              <Text style={styles.filterLabel}>Filtrar Transacciones</Text>
+            </View>
+            <View style={styles.filterButtons}>
+              {['Todos', 'EARNED', 'SPENT'].map((filter) => {
+                const isActive = activeFilter === filter;
+                const displayName = filter === 'Todos' ? 'Todos' : filter === 'EARNED' ? 'Ganado' : 'Gastado';
+                const count = filter === 'Todos' ? allHistorial.length : 
+                             allHistorial.filter(item => item.type === filter).length;
+                
+                return (
+                  <TouchableOpacity
+                    key={filter}
+                    style={[styles.filterButton, isActive && styles.filterButtonActive]}
+                    onPress={() => applyFilter(filter)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.filterButtonText, isActive && styles.filterButtonTextActive]}>
+                      {displayName}
+                    </Text>
+                    {filter === 'Todos' && (
+                      <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
+                        <Text style={styles.countText}>{count}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
         {error && (
           <View style={styles.errorContainer}>
             <MaterialCommunityIcons name="alert-circle" size={24} color={COLORS.error} />
@@ -180,6 +231,78 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.md,
+  },
+  filtersContainer: {
+    backgroundColor: COLORS.white,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    marginBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
+    ...(Platform.OS === 'web' && {
+      paddingVertical: SPACING.md,
+    }),
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.md,
+  },
+  filterTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  filterLabel: {
+    fontSize: TYPOGRAPHY.body2,
+    color: COLORS.gray,
+    fontWeight: '600',
+  },
+  filterButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.light,
+    gap: SPACING.xs,
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
+  },
+  filterButtonText: {
+    fontSize: TYPOGRAPHY.body2,
+    color: COLORS.gray,
+    fontWeight: '600',
+  },
+  filterButtonTextActive: {
+    color: COLORS.white,
+  },
+  countBadge: {
+    backgroundColor: COLORS.gray,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  countBadgeActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  countText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: '700',
   },
   centerContainer: {
     flex: 1,
