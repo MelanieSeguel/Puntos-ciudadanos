@@ -151,7 +151,8 @@ export const TAB_CONFIG = {
 
 export const LAYOUT = {
   // Tamaños de pantalla
-  webMaxWidth: 800,
+  webMaxWidth: 1200, // Dashboard principal (más ancho)
+  contentMaxWidth: 800, // Contenido de lectura (artículos, formularios)
   tabletMaxWidth: 600,
 
   // SafeArea

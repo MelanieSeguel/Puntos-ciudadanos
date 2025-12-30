@@ -7,6 +7,7 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
+import WebHeader from '../../components/WebHeader';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
 
 export default function BenefitsScreen() {
@@ -33,20 +34,18 @@ export default function BenefitsScreen() {
   );
 
   return (
-    <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Beneficios Disponibles</Text>
-        <Text style={styles.subtitle}>Canjea tus puntos por premios</Text>
+    <ScreenWrapper bgColor={COLORS.light} safeArea={false} padding={0}>
+      <WebHeader title="Beneficios Disponibles" />
+      <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}>
+        <FlatList
+          data={benefits}
+          renderItem={renderBenefit}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={false}
+          style={styles.list}
+        />
       </View>
-
-      <FlatList
-        data={benefits}
-        renderItem={renderBenefit}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        scrollEnabled={false}
-        style={styles.list}
-      />
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>Más beneficios próximamente</Text>
@@ -56,6 +55,10 @@ export default function BenefitsScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+  },
   header: {
     marginBottom: SPACING.xl,
   },

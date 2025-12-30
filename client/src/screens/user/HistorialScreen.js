@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
+import WebHeader from '../../components/WebHeader';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme/theme';
 
 export default function HistorialScreen() {
@@ -70,12 +71,9 @@ export default function HistorialScreen() {
   ]);
 
   return (
-    <ScreenWrapper bgColor={COLORS.white} safeArea={false}>
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: Platform.OS === 'web' ? 0 : SPACING.md }]}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Historial de Actividades</Text>
-          <Text style={styles.subtitle}>Todas tus transacciones de puntos</Text>
-        </View>
+    <ScreenWrapper bgColor={COLORS.white} safeArea={false} padding={0}>
+      <WebHeader title="Mi Historial" />
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}>
         <View style={styles.listContainer}>
           {historial.map((item) => (
             <View key={item.id} style={styles.historialItem}>

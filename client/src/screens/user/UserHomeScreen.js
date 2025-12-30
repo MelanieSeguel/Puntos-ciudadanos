@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
+import WebHeader from '../../components/WebHeader';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme/theme';
 import { walletAPI, benefitsAPI, pointsAPI } from '../../services/api';
 import { getErrorMessage } from '../../utils/errorHandler';
@@ -166,45 +167,12 @@ export default function UserHomeScreen({ navigation }) {
     );
   }
 
-  const getInitials = (name) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  };
-
   return (
-    <ScreenWrapper bgColor={COLORS.white} padding={0} maxWidth={false} safeArea={false}>
-      {/* HEADER FIJO EN WEB */}
-      {Platform.OS === 'web' && (
-        <View style={styles.fixedHeader}>
-          <View style={styles.headerContent}>
-            <View>
-              <Text style={styles.headerTitle}>Tus Estadísticas</Text>
-            </View>
-            <View style={styles.headerRight}>
-              <View style={styles.pointsBadge}>
-                <MaterialCommunityIcons name="star" size={16} color="#FFB84D" />
-                <Text style={styles.pointsText}>{balance.toLocaleString()}</Text>
-                <Text style={styles.pointsLabel}>PUNTOS</Text>
-              </View>
-              <View style={styles.userProfile}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{getInitials(userData.name)}</Text>
-                </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{userData.name}</Text>
-                  <Text style={styles.userEmail}>{userData.email}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
+    <ScreenWrapper bgColor={COLORS.light} padding={0} maxWidth={Platform.OS === 'web'} safeArea={Platform.OS !== 'web'}>
+      <WebHeader title="Tus Estadísticas" />
 
       <ScrollView
-        style={{ flex: 1 }}
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         scrollEnabled={true}
         showsVerticalScrollIndicator={false}
@@ -377,30 +345,14 @@ export default function UserHomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  fixedHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    paddingTop: SPACING.md,
-    paddingRight: SPACING.md,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 0,
+    paddingHorizontal: Platform.OS === 'web' ? SPACING.xl : SPACING.md,
     paddingTop: Platform.OS === 'web' ? 90 : SPACING.md,
-    paddingBottom: SPACING.lg,
+    paddingBottom: SPACING.xl,
   },
   centerContainer: {
     flex: 1,
@@ -412,81 +364,13 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontSize: TYPOGRAPHY.body2,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Platform.OS === 'web' ? SPACING.lg : SPACING.sm,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: COLORS.dark,
-  },
-  headerRight: {
-    alignItems: 'flex-end',
-    gap: SPACING.md,
-    flexDirection: 'row',
-  },
-  pointsBadge: {
-    backgroundColor: '#FFF8E1',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  pointsText: {
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#FFB84D',
-  },
-  pointsLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFB84D',
-  },
-  userProfile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: COLORS.white,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  userInfo: {
-    alignItems: 'flex-end',
-  },
-  userName: {
-    fontWeight: '600',
-    fontSize: 12,
-    color: COLORS.dark,
-  },
-  userEmail: {
-    fontSize: 10,
-    color: COLORS.gray,
-  },
   greeting: {
-    marginBottom: Platform.OS === 'web' ? SPACING.lg : SPACING.md,
-    paddingHorizontal: SPACING.md,
-    paddingTop: Platform.OS === 'web' ? SPACING.md : 0,
+    marginBottom: SPACING.lg,
   },
   greetingText: {
     fontSize: 24,
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: Platform.OS === 'web' ? SPACING.sm : 0,
   },
   dateContainer: {
     flexDirection: 'row',
@@ -498,12 +382,10 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
   },
   mainContent: {
-    marginBottom: Platform.OS === 'web' ? SPACING.xl : SPACING.md,
+    marginBottom: SPACING.xl,
     gap: SPACING.md,
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-    flex: Platform.OS === 'web' ? 1 : undefined,
-    paddingHorizontal: SPACING.md,
-    alignItems: Platform.OS === 'web' ? 'flex-start' : undefined,
+    alignItems: Platform.OS === 'web' ? 'flex-start' : 'stretch',
   },
   balanceCard: {
     backgroundColor: COLORS.white,
@@ -511,8 +393,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.light,
     padding: SPACING.lg,
-    marginBottom: Platform.OS === 'web' ? 0 : SPACING.lg,
-    flex: Platform.OS === 'web' ? 1.5 : undefined,
+    marginBottom: Platform.OS === 'web' ? 0 : SPACING.md,
+    flex: Platform.OS === 'web' ? 1.5 : 1,
   },
   balanceTop: {
     flexDirection: 'row',
@@ -525,18 +407,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
     letterSpacing: 1,
-    marginBottom: Platform.OS === 'web' ? 4 : 0,
+    marginBottom: 4,
   },
   balanceAmount: {
     fontSize: 48,
     fontWeight: '700',
     color: COLORS.dark,
-    lineHeight: Platform.OS === 'web' ? 50 : undefined,
+    lineHeight: 52,
   },
   balanceUnit: {
     fontSize: 14,
     color: COLORS.gray,
-    marginTop: Platform.OS === 'web' ? 4 : 0,
+    marginTop: 4,
   },
   balanceActions: {
     flexDirection: 'row',
@@ -560,8 +442,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   sidePanel: {
-    gap: SPACING.lg,
-    flex: Platform.OS === 'web' ? 1 : undefined,
+    gap: SPACING.md,
+    flex: Platform.OS === 'web' ? 1 : 1,
   },
   statCard: {
     backgroundColor: COLORS.white,
@@ -586,13 +468,13 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: '700',
     color: COLORS.success,
-    marginBottom: Platform.OS === 'web' ? SPACING.md : 0,
+    marginBottom: SPACING.md,
   },
   progressBar: {
     height: 8,
     backgroundColor: '#E0E0E0',
     borderRadius: 4,
-    marginBottom: Platform.OS === 'web' ? SPACING.md : 0,
+    marginBottom: SPACING.sm,
     overflow: 'hidden',
   },
   progressFill: {
@@ -652,16 +534,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.dark,
+    marginBottom: 2,
   },
   activityDesc: {
     fontSize: 11,
     color: COLORS.gray,
-    marginTop: Platform.OS === 'web' ? 2 : 0,
+    marginTop: 2,
   },
   activityTime: {
     fontSize: 10,
     color: COLORS.gray,
-    marginTop: Platform.OS === 'web' ? 2 : 0,
+    marginTop: 2,
     fontWeight: '500',
   },
   activityPoints: {
@@ -669,14 +552,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   earnSection: {
-    marginBottom: SPACING.md,
-    paddingHorizontal: SPACING.md,
+    marginBottom: SPACING.xl,
   },
   earnHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   earnTitle: {
     fontSize: 16,
@@ -731,14 +613,12 @@ const styles = StyleSheet.create({
   },
   benefitsSection: {
     marginBottom: SPACING.xl,
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   benefitsScroll: {
     paddingRight: SPACING.md,

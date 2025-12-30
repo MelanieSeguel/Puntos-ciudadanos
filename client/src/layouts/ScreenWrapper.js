@@ -18,7 +18,6 @@ const ScreenWrapper = ({
   maxWidth = true,
 }) => {
   const isWeb = Platform.OS === 'web';
-  const windowWidth = Dimensions.get('window').width;
 
   // Para web, aplicar max-width y centrado
   const webStyles = isWeb && maxWidth
@@ -26,6 +25,7 @@ const ScreenWrapper = ({
         maxWidth: LAYOUT.webMaxWidth,
         width: '100%',
         alignSelf: 'center',
+        marginHorizontal: 'auto',
       }
     : {};
 
@@ -36,16 +36,15 @@ const ScreenWrapper = ({
       style={[
         styles.container,
         { backgroundColor: bgColor },
-        webStyles,
       ]}
     >
       <View
         style={[
           styles.content,
+          webStyles,
           {
-            paddingHorizontal: padding !== 0 ? (isWeb ? SPACING.lg : padding) : 0,
-            paddingVertical: padding !== 0 ? (isWeb ? SPACING.md : padding) : 0,
-
+            paddingHorizontal: padding !== 0 ? (isWeb ? SPACING.xl : padding) : 0,
+            paddingVertical: padding !== 0 ? (isWeb ? SPACING.lg : padding) : 0,
           },
         ]}
       >
