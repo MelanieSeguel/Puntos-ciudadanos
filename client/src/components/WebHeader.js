@@ -13,7 +13,7 @@ import { COLORS, SPACING } from '../theme/theme';
 import { walletAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 
-export default function WebHeader({ title = 'Puntos Ciudadanos' }) {
+export default function WebHeader({ title = 'Puntos Ciudadanos', hideBalance = false }) {
   const { authState } = useContext(AuthContext);
   const [userData, setUserData] = useState({ name: 'Usuario', email: '' });
   const [balance, setBalance] = useState(0);
@@ -21,7 +21,7 @@ export default function WebHeader({ title = 'Puntos Ciudadanos' }) {
   const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    // Solo cargar una vez al inicio
+    // Siempre cargar datos del usuario (nombre, email, y balance si no está oculto)
     if (authState.authenticated && authState.token && !dataLoaded) {
       loadUserData();
     }
@@ -40,7 +40,10 @@ export default function WebHeader({ title = 'Puntos Ciudadanos' }) {
           name: user.name || 'Usuario',
           email: user.email || '',
         });
-        setBalance(user.wallet?.balance || 0);
+        // Solo actualizar balance si no está oculto
+        if (!hideBalance) {
+          setBalance(user.wallet?.balance || 0);
+        }
         setDataLoaded(true);
       }
     } catch (error) {
@@ -71,11 +74,13 @@ export default function WebHeader({ title = 'Puntos Ciudadanos' }) {
           <Text style={styles.headerTitle}>{title}</Text>
         </View>
         <View style={styles.headerRight}>
-          <View style={styles.pointsBadge}>
-            <MaterialCommunityIcons name="star" size={16} color="#FFB84D" />
-            <Text style={styles.pointsText}>{balance.toLocaleString()}</Text>
-            <Text style={styles.pointsLabel}>PUNTOS</Text>
-          </View>
+          {!hideBalance && (
+            <View style={styles.pointsBadge}>
+              <MaterialCommunityIcons name="star" size={16} color="#FFB84D" />
+              <Text style={styles.pointsText}>{balance.toLocaleString()}</Text>
+              <Text style={styles.pointsLabel}>PUNTOS</Text>
+            </View>
+          )}
           <View style={styles.userProfile}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{getInitials(userData.name)}</Text>

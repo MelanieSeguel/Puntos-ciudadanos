@@ -111,6 +111,8 @@ export const benefitsAPI = {
 export const merchantAPI = {
   validateQR: (transactionId) => api.post('/merchant/validate-qr', { transactionId }),
   getStats: () => api.get('/merchant/stats'),
+  getHistory: (limit = 50, offset = 0) => 
+    api.get(`/merchant/history?limit=${limit}&offset=${offset}`),
 };
 
 // Servicios de misiones

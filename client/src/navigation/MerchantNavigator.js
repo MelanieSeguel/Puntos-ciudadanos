@@ -1,129 +1,226 @@
 /**
  * MerchantNavigator
- * Bottom Tab Navigator para comercios
- * Pestañas: Dashboard, Validar (Scanner), Historial
+ * Navegación adaptada a plataforma:
+ * - MÓVIL: Bottom Tab Navigator con 3 pestañas
+ * - WEB: Layout con Sidebar (izquierda 20%) + Contenido (derecha 80%)
  */
 
-import React from 'react';
-import { StyleSheet, Platform } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { View, StyleSheet, Platform, TouchableOpacity, Text, ScrollView, Modal, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import MerchantDashboardScreen from '../screens/merchant/MerchantDashboardScreen';
 import ScannerScreen from '../screens/merchant/ScannerScreen';
 import HistoryScreen from '../screens/merchant/HistoryScreen';
-import MerchantStockScreen from '../screens/merchant/MerchantStockScreen';
-import { COLORS, TAB_CONFIG, SPACING } from '../theme/theme';
+import WebHeader from '../components/WebHeader';
+import { AuthContext } from '../context/AuthContext';
+import { COLORS, SPACING } from '../theme/theme';
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
 const isWeb = Platform.OS === 'web';
 
-// Stack para Scanner (modal)
-function ScannerStack() {
+// ============================================================================
+// COMPONENTE: Sidebar para WEB
+// ============================================================================
+function WebSidebar({ activeTab, onNavigate }) {
+  const { logout } = useContext(AuthContext);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogoutConfirm = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Error logging out:', error);
+      Alert.alert('Error', 'No se pudo cerrar sesión correctamente');
+    }
+  };
+
+  const tabs = [
+    { id: 'Dashboard', label: 'Dashboard', icon: 'chart-box' },
+    { id: 'Scanner', label: 'Validar Cupones', icon: 'qrcode-scan' },
+    { id: 'History', label: 'Historial', icon: 'history' },
+  ];
+
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: COLORS.merchant,
-        },
-        headerTintColor: COLORS.white,
-        headerTitleStyle: {
-          fontWeight: '600',
-        },
-      }}
-    >
-      <Stack.Screen
-        name="ScannerMain"
-        component={ScannerScreen}
-        options={{ title: 'Validar Cupón' }}
-      />
-    </Stack.Navigator>
+    <View style={styles.webSidebar}>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <MaterialCommunityIcons name="leaf" size={28} color={COLORS.white} />
+        <View>
+          <Text style={styles.logoMain}>Puntos</Text>
+          <Text style={styles.logoSub}>Ciudadanos</Text>
+          <Text style={styles.logoMerchant}>Mi Comercio</Text>
+        </View>
+      </View>
+
+      <ScrollView style={styles.sidebarNav}>
+        {tabs.map((tab) => (
+          <TouchableOpacity
+            key={tab.id}
+            style={[
+              styles.sidebarItem,
+              activeTab === tab.id && styles.sidebarItemActive,
+            ]}
+            onPress={() => onNavigate(tab.id)}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons
+              name={tab.icon}
+              size={20}
+              color={activeTab === tab.id ? COLORS.merchant : COLORS.white}
+            />
+            <Text
+              style={[
+                styles.sidebarLabel,
+                activeTab === tab.id && styles.sidebarLabelActive,
+              ]}
+            >
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <View style={styles.sidebarFooter}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={() => setShowLogoutModal(true)}>
+          <MaterialCommunityIcons name="logout" size={20} color={COLORS.white} />
+          <Text style={styles.logoutText}>Cerrar Sesión</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Modal de confirmación */}
+      <Modal
+        transparent
+        visible={showLogoutModal}
+        animationType="fade"
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.logoutModalContent}>
+            <View style={styles.modalIconContainer}>
+              <MaterialCommunityIcons name="logout" size={56} color={COLORS.error} />
+            </View>
+            <Text style={styles.logoutModalTitle}>Cerrar Sesión</Text>
+            <Text style={styles.logoutModalMessage}>¿Estás seguro que deseas salir de tu cuenta?</Text>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonCancel]} 
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonConfirm]} 
+                onPress={() => {
+                  setShowLogoutModal(false);
+                  handleLogoutConfirm();
+                }}
+              >
+                <Text style={styles.modalButtonTextConfirm}>Salir</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
-// Stack para Stock
-function StockStack() {
+// ============================================================================
+// COMPONENTE: Web Layout (Sidebar + Content)
+// ============================================================================
+function WebLayout() {
+  const [activeTab, setActiveTab] = useState('Dashboard');
+
+  const renderContent = () => {
+    return (
+      <>
+        <View style={activeTab === 'Dashboard' ? styles.activeScreen : styles.hiddenScreen}>
+          <MerchantDashboardScreen />
+        </View>
+        <View style={activeTab === 'Scanner' ? styles.activeScreen : styles.hiddenScreen}>
+          <ScannerScreen />
+        </View>
+        <View style={activeTab === 'History' ? styles.activeScreen : styles.hiddenScreen}>
+          <HistoryScreen />
+        </View>
+      </>
+    );
+  };
+
+  const getPageTitle = () => {
+    const titles = {
+      'Dashboard': 'Panel de Control',
+      'Scanner': 'Validar Cupones',
+      'History': 'Historial de Validaciones',
+    };
+    return titles[activeTab] || 'Mi Comercio';
+  };
+
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: COLORS.merchant,
-        },
-        headerTintColor: COLORS.white,
-        headerTitleStyle: {
-          fontWeight: '600',
-        },
-      }}
-    >
-      <Stack.Screen
-        name="StockMain"
-        component={MerchantStockScreen}
-        options={{ title: 'Mi Stock' }}
-      />
-    </Stack.Navigator>
+    <View style={styles.webContainer}>
+      <WebSidebar activeTab={activeTab} onNavigate={setActiveTab} />
+      <View style={styles.webContent}>
+        <WebHeader title={getPageTitle()} hideBalance={true} />
+        {renderContent()}
+      </View>
+    </View>
   );
 }
 
-export default function MerchantNavigator() {
+// ============================================================================
+// COMPONENTE: Mobile Layout (Bottom Tabs)
+// ============================================================================
+function MobileLayout() {
   const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => {
-        const tabConfig = TAB_CONFIG.merchantTabs.find((t) => t.name === route.name);
-
-        return {
-          headerShown: true,
-          headerStyle: {
-            backgroundColor: COLORS.merchant,
-          },
-          headerTintColor: COLORS.white,
-          headerTitleStyle: {
-            fontWeight: '600',
-            fontSize: 18,
-          },
-          tabBarIcon: ({ focused }) => {
-            const iconMap = {
-              MerchantDashboard: 'chart-box',
-              Stock: 'package',
-              Scanner: 'qrcode-scan',
-              History: 'history',
-            };
-            return (
-              <MaterialCommunityIcons
-                name={iconMap[route.name]}
-                size={24}
-                color={focused ? tabConfig.color : COLORS.gray}
-              />
-            );
-          },
-          tabBarLabel: tabConfig?.label,
-          tabBarActiveTintColor: tabConfig?.color,
-          tabBarInactiveTintColor: COLORS.gray,
-          tabBarStyle: isWeb 
-            ? styles.webTabBar 
-            : { ...styles.mobileTabBar, paddingBottom: insets.bottom, height: 60 + insets.bottom },
-        };
-      }}
+      screenOptions={({ route }) => ({
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: COLORS.merchant,
+        },
+        headerTintColor: COLORS.white,
+        headerTitleStyle: {
+          fontWeight: '600',
+          fontSize: 18,
+        },
+        tabBarIcon: ({ focused }) => {
+          const iconMap = {
+            Dashboard: 'chart-box',
+            Scanner: 'qrcode-scan',
+            History: 'history',
+          };
+          return (
+            <MaterialCommunityIcons
+              name={iconMap[route.name]}
+              size={24}
+              color={focused ? COLORS.merchant : COLORS.gray}
+            />
+          );
+        },
+        tabBarActiveTintColor: COLORS.merchant,
+        tabBarInactiveTintColor: COLORS.gray,
+        tabBarStyle: {
+          ...styles.mobileTabBar,
+          paddingBottom: insets.bottom,
+          height: 60 + insets.bottom,
+        },
+      })}
     >
       <Tab.Screen
-        name="MerchantDashboard"
+        name="Dashboard"
         component={MerchantDashboardScreen}
         options={{ title: 'Dashboard' }}
       />
       <Tab.Screen
-        name="Stock"
-        component={StockStack}
-        options={{ headerShown: false, title: 'Mi Stock' }}
-      />
-      <Tab.Screen
         name="Scanner"
-        component={ScannerStack}
-        options={{ headerShown: false, title: 'Validar' }}
+        component={ScannerScreen}
+        options={{ title: 'Validar' }}
       />
       <Tab.Screen
         name="History"
@@ -134,19 +231,205 @@ export default function MerchantNavigator() {
   );
 }
 
+// ============================================================================
+// EXPORT: Selector de Layout según plataforma
+// ============================================================================
+export default function MerchantNavigator() {
+  return isWeb ? <WebLayout /> : <MobileLayout />;
+}
+
 const styles = StyleSheet.create({
+  // ========== MOBILE TAB BAR ==========
   mobileTabBar: {
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.light,
     height: 60,
     paddingTop: SPACING.xs,
+    paddingBottom: SPACING.xs,
   },
-  webTabBar: {
-    backgroundColor: COLORS.white,
+
+  // ========== WEB LAYOUT ==========
+  webContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: COLORS.background,
+  },
+  webSidebar: {
+    width: '20%',
+    backgroundColor: '#1a1f36',
+    flexDirection: 'column',
+    borderRightWidth: 1,
+    borderRightColor: '#2a2f46',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2f46',
+  },
+  logoMain: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  logoSub: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 14,
+  },
+  logoMerchant: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  sidebarNav: {
+    flex: 1,
+    paddingVertical: 8,
+  },
+  sidebarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 8,
+    marginVertical: 4,
+    borderRadius: 8,
+  },
+  sidebarItemActive: {
+    backgroundColor: 'rgba(255, 138, 76, 0.15)',
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.merchant,
+  },
+  sidebarLabel: {
+    marginLeft: 12,
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  sidebarLabelActive: {
+    color: COLORS.merchant,
+    fontWeight: '600',
+  },
+  sidebarFooter: {
+    paddingHorizontal: 8,
+    paddingBottom: 16,
     borderTopWidth: 1,
-    borderTopColor: COLORS.light,
-    height: 70,
-    paddingTop: SPACING.sm,
+    borderTopColor: '#2a2f46',
+    paddingTop: 8,
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 71, 87, 0.1)',
+  },
+  logoutText: {
+    marginLeft: 12,
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  webContent: {
+    flex: 1,
+    width: '80%',
+    backgroundColor: COLORS.white,
+    overflow: 'auto',
+  },
+  activeScreen: {
+    flex: 1,
+    display: 'flex',
+  },
+  hiddenScreen: {
+    display: 'none',
+  },
+
+  // ========== LOGOUT MODAL ==========
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  logoutModalContent: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: SPACING.xl * 1.5,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.error + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  logoutModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  logoutModalMessage: {
+    fontSize: 15,
+    color: COLORS.gray,
+    marginBottom: SPACING.xl,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: SPACING.md + 2,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: COLORS.white,
+    borderWidth: 2,
+    borderColor: COLORS.light,
+  },
+  modalButtonConfirm: {
+    backgroundColor: COLORS.error,
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalButtonTextCancel: {
+    color: COLORS.dark,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalButtonTextConfirm: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -12,13 +12,30 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
-import { pointsAPI, walletAPI } from '../../services/api';
+import { benefitsAPI, pointsAPI, walletAPI } from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import { getErrorMessage } from '../../utils/errorHandler';
+
+// Helper para alertas multiplataforma
+const showAlert = (title, message, buttons) => {
+  if (Platform.OS === 'web') {
+    // En web, usar window.confirm
+    const confirmed = window.confirm(`${title}\n\n${message}`);
+    if (confirmed && buttons) {
+      const confirmButton = buttons.find(b => b.style !== 'cancel');
+      if (confirmButton && confirmButton.onPress) {
+        confirmButton.onPress();
+      }
+    }
+  } else {
+    Alert.alert(title, message, buttons);
+  }
+};
 
 export default function BenefitDetailScreen({ route, navigation }) {
   const { benefitId, benefit, userBalance: initialBalance } = route.params || {};
@@ -56,15 +73,23 @@ export default function BenefitDetailScreen({ route, navigation }) {
   const noStock = data.stock <= 0;
 
   const handleRedeem = () => {
+    console.log('[BenefitDetail] handleRedeem llamado');
+    console.log('[BenefitDetail] canRedeem:', canRedeem);
+    console.log('[BenefitDetail] userBalance:', userBalance);
+    console.log('[BenefitDetail] pointsCost:', data.pointsCost);
+    console.log('[BenefitDetail] stock:', data.stock);
+    console.log('[BenefitDetail] active:', data.active);
+
     if (!canRedeem) {
+      console.log('[BenefitDetail] No puede canjear - mostrando alerta');
       if (insufficientBalance) {
-        Alert.alert(
+        showAlert(
           'Saldo Insuficiente',
           `Necesitas ${data.pointsCost} puntos para canjear este beneficio.\n\nTu saldo actual: ${userBalance} puntos\nFaltan: ${data.pointsCost - userBalance} puntos`,
           [{ text: 'Entendido', style: 'default' }]
         );
       } else if (noStock) {
-        Alert.alert(
+        showAlert(
           'Sin Stock',
           'Este beneficio ya no está disponible en este momento.',
           [{ text: 'Entendido', style: 'default' }]
@@ -73,7 +98,8 @@ export default function BenefitDetailScreen({ route, navigation }) {
       return;
     }
 
-    Alert.alert(
+    console.log('[BenefitDetail] Mostrando confirmación de canje');
+    showAlert(
       'Confirmar Canje',
       `¿Deseas canjear "${data.title}" por ${data.pointsCost} puntos?\n\nSaldo actual: ${userBalance} pts\nSaldo después: ${userBalance - data.pointsCost} pts`,
       [
@@ -92,43 +118,67 @@ export default function BenefitDetailScreen({ route, navigation }) {
       setIsRedeeming(true);
       
       const response = await pointsAPI.redeemBenefit(data.id);
+      console.log('[BenefitDetail] Respuesta del canje:', response.data);
       
       // Actualizar balance local
       const newBalance = userBalance - data.pointsCost;
       setUserBalance(newBalance);
       
-      Alert.alert(
-        '¡Beneficio Canjeado!',
-        `Has canjeado exitosamente "${data.title}".\n\nNuevo saldo: ${newBalance} puntos`,
-        [
-          {
-            text: 'Ver QR',
-            onPress: () => {
-              navigation.replace('QRCode', {
-                transactionId: response.data?.data?.transaction?.id || response.data?.data?.id,
-                benefitName: data.title,
-              });
+      const redemption = response.data?.data?.redemption;
+      
+      // Navegar directamente después del canje exitoso (sin alert en web)
+      if (Platform.OS === 'web') {
+        // En web, navegar inmediatamente sin mostrar alert
+        console.log('[BenefitDetail] Navegando a QRCode con:', {
+          redemptionId: redemption?.id,
+          qrCode: redemption?.qrCode,
+          benefitName: data.title,
+        });
+        navigation.navigate('QRCode', {
+          redemptionId: redemption?.id,
+          qrCode: redemption?.qrCode,
+          benefitName: data.title,
+          benefitId: data.id,
+          expiresAt: redemption?.expiresAt,
+        });
+      } else {
+        // En móvil, mostrar alert con opciones
+        showAlert(
+          '¡Beneficio Canjeado!',
+          `Has canjeado exitosamente "${data.title}".\n\nNuevo saldo: ${newBalance} puntos`,
+          [
+            {
+              text: 'Ver QR',
+              onPress: () => {
+                navigation.navigate('QRCode', {
+                  redemptionId: redemption?.id,
+                  qrCode: redemption?.qrCode,
+                  benefitName: data.title,
+                  benefitId: data.id,
+                  expiresAt: redemption?.expiresAt,
+                });
+              },
             },
-          },
-          {
-            text: 'Volver',
-            style: 'cancel',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+            {
+              text: 'Volver',
+              style: 'cancel',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      }
     } catch (error) {
       console.error('[BenefitDetail] Error al canjear:', error);
       const errorMessage = getErrorMessage(error);
       
       if (error.response?.status === 400 || error.response?.status === 402) {
-        Alert.alert(
+        showAlert(
           'No se pudo canjear',
           errorMessage || 'No tienes suficientes puntos para este beneficio.',
           [{ text: 'Entendido', style: 'default' }]
         );
       } else {
-        Alert.alert(
+        showAlert(
           'Error',
           errorMessage || 'Ocurrió un error al canjear el beneficio. Intenta nuevamente.',
           [{ text: 'Entendido', style: 'default' }]

@@ -148,6 +148,8 @@ function WebLayout() {
   const [missionSubmissionParams, setMissionSubmissionParams] = useState(null);
   const [benefitDetailVisible, setBenefitDetailVisible] = useState(false);
   const [benefitDetailParams, setBenefitDetailParams] = useState(null);
+  const [qrCodeVisible, setQrCodeVisible] = useState(false);
+  const [qrCodeParams, setQrCodeParams] = useState(null);
 
   const handleMissionPress = (params) => {
     setMissionSubmissionParams(params);
@@ -170,6 +172,19 @@ function WebLayout() {
     setBenefitDetailVisible(false);
     setTimeout(() => {
       setBenefitDetailParams(null);
+    }, 300);
+  };
+
+  const handleQRCodePress = (params) => {
+    console.log('[UserNavigator] Navegando a QRCode con params:', params);
+    setQrCodeParams(params);
+    setQrCodeVisible(true);
+  };
+
+  const handleCloseQRCode = () => {
+    setQrCodeVisible(false);
+    setTimeout(() => {
+      setQrCodeParams(null);
     }, 300);
   };
 
@@ -200,6 +215,15 @@ function WebLayout() {
     navigate: (screen, params) => {
       if (screen === 'BenefitDetail') {
         handleBenefitPress(params);
+      } else if (screen === 'QRCode') {
+        handleQRCodePress(params);
+      }
+    },
+    goBack: () => {
+      if (qrCodeVisible) {
+        handleCloseQRCode();
+      } else if (benefitDetailVisible) {
+        handleCloseBenefitDetail();
       }
     }
   };
@@ -292,12 +316,39 @@ function WebLayout() {
                 route={{ params: benefitDetailParams }}
                 navigation={{ 
                   goBack: handleCloseBenefitDetail,
+                  navigate: (screen, params) => {
+                    if (screen === 'QRCode') {
+                      handleCloseBenefitDetail();
+                      handleQRCodePress(params);
+                    }
+                  },
                   replace: (screen, params) => {
                     if (screen === 'QRCode') {
                       handleCloseBenefitDetail();
-                      // Aquí podrías mostrar otro modal para el QR si lo necesitas
+                      handleQRCodePress(params);
                     }
                   }
+                }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal para QRCode */}
+      <Modal
+        visible={qrCodeVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseQRCode}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.qrModalContent}>
+            {qrCodeParams && (
+              <QRCodeScreen 
+                route={{ params: qrCodeParams }}
+                navigation={{ 
+                  goBack: handleCloseQRCode
                 }}
               />
             )}
@@ -595,6 +646,19 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 0,
     position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  qrModalContent: {
+    width: '100%',
+    maxWidth: 600,
+    maxHeight: '90%',
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },

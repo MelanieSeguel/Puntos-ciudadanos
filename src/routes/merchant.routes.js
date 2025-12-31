@@ -106,4 +106,70 @@ router.get(
   }
 );
 
+/**
+ * GET /api/v1/merchant/history
+ * Historial de validaciones del comercio
+ */
+router.get(
+  '/history',
+  authenticate,
+  isMerchantOrAdmin,
+  async (req, res) => {
+    try {
+      const { limit = 50, offset = 0 } = req.query;
+
+      const redemptions = await prisma.benefitRedemption.findMany({
+        where: {
+          scannedByMerchantId: req.user.id,
+          status: 'REDEEMED'
+        },
+        include: {
+          benefit: {
+            select: {
+              title: true,
+              pointsCost: true
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          redeemedAt: 'desc'
+        },
+        take: parseInt(limit),
+        skip: parseInt(offset)
+      });
+
+      const total = await prisma.benefitRedemption.count({
+        where: {
+          scannedByMerchantId: req.user.id,
+          status: 'REDEEMED'
+        }
+      });
+
+      res.json({
+        success: true,
+        message: 'Historial de validaciones',
+        data: {
+          redemptions,
+          total,
+          limit: parseInt(limit),
+          offset: parseInt(offset)
+        }
+      });
+    } catch (error) {
+      console.error('Error obteniendo historial:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al obtener historial' 
+      });
+    }
+  }
+);
+
 export default router;
