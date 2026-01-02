@@ -15,9 +15,12 @@ import config from '../config/index.js';
  * @route   POST /api/v1/auth/register
  * @desc    Registrar nuevo usuario
  * @access  Public
+ * @validation Zod schema (registerSchema) valida name, email, password
  */
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
+  // NOTA DE SEGURIDAD: Los datos ya fueron validados por el middleware validate(registerSchema)
+  // en auth.routes.js antes de llegar aquí. No es necesario validar nuevamente.
 
   // Verificar si el usuario ya existe
   const existingUser = await prisma.user.findUnique({
@@ -79,9 +82,11 @@ export const register = asyncHandler(async (req, res) => {
  * @route   POST /api/v1/auth/login
  * @desc    Iniciar sesión
  * @access  Public
+ * @validation Zod schema (loginSchema) valida email y password
  */
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  // NOTA DE SEGURIDAD: Los datos ya fueron validados por el middleware validate(loginSchema)
 
   // Buscar usuario
   const user = await prisma.user.findUnique({

@@ -119,6 +119,9 @@ model Wallet {
   
   @@index([userId])
   @@map("wallets")
+  // CONSTRAINT DE SEGURIDAD: Prevenir saldo negativo
+  // PostgreSQL no soporta CHECK constraints nativamente en Prisma
+  // Se debe crear manualmente con una migración
 }
 
 /// Historial de transacciones de puntos (inmutable)

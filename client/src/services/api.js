@@ -61,7 +61,7 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Token inválido o expirado
-      console.warn('⚠️ Sesión expirada o token inválido (401). Ejecutando logout...');
+      console.warn('Sesión expirada o token inválido (401). Ejecutando logout...');
       
       try {
         // Limpiar storage local

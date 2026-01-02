@@ -178,14 +178,16 @@ app.use((err, req, res, next) => {
 // SERVER STARTUP
 // ============================================
 
+let serverInstance; // Guardar referencia al servidor HTTP
+
 const startServer = async () => {
   try {
     // Verificar conexión a la base de datos
     await prisma.$connect();
     console.log('Conexión a PostgreSQL establecida');
     
-    // Iniciar servidor
-    app.listen(config.port, '0.0.0.0', () => {
+    // Iniciar servidor y guardar referencia
+    serverInstance = app.listen(config.port, '0.0.0.0', () => {
       console.log(`Servidor corriendo en puerto ${config.port}`);
       console.log(`Ambiente: ${config.env}`);
       console.log(`API: http://localhost:${config.port}/api/${config.apiVersion}`);
@@ -196,19 +198,55 @@ const startServer = async () => {
   }
 };
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\nCerrando servidor...');
-  await prisma.$disconnect();
-  console.log('Conexión a base de datos cerrada');
-  process.exit(0);
+// ============================================
+// GRACEFUL SHUTDOWN
+// ============================================
+
+const gracefulShutdown = async (signal) => {
+  console.log(`\nSeñal ${signal} recibida. Iniciando apagado seguro...`);
+  
+  // 1. Dejar de aceptar nuevas conexiones
+  if (serverInstance) {
+    serverInstance.close(async () => {
+      console.log('Servidor HTTP cerrado. No se aceptan nuevas conexiones.');
+      
+      // 2. Desconectar de la base de datos después de que terminen las peticiones actuales
+      try {
+        await prisma.$disconnect();
+        console.log('Conexión a base de datos cerrada');
+        process.exit(0);
+      } catch (error) {
+        console.error('Error al desconectar base de datos:', error);
+        process.exit(1);
+      }
+    });
+    
+    // Timeout de seguridad: forzar cierre si tarda más de 30 segundos
+    setTimeout(() => {
+      console.error('No se pudieron cerrar todas las conexiones. Forzando cierre...');
+      process.exit(1);
+    }, 30000);
+  } else {
+    // Si no hay servidor activo, solo desconectar BD
+    await prisma.$disconnect();
+    console.log('Conexión a base de datos cerrada');
+    process.exit(0);
+  }
+};
+
+// Escuchar señales de terminación
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+// Manejar excepciones no capturadas
+process.on('uncaughtException', (error) => {
+  console.error('Excepción no capturada:', error);
+  gracefulShutdown('uncaughtException');
 });
 
-process.on('SIGTERM', async () => {
-  console.log('\nCerrando servidor...');
-  await prisma.$disconnect();
-  console.log('Conexión a base de datos cerrada');
-  process.exit(0);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Promise rechazada sin manejar:', reason);
+  gracefulShutdown('unhandledRejection');
 });
 
 startServer();

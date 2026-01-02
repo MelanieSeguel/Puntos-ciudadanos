@@ -5,6 +5,7 @@ import prisma from '../config/database.js';
 /**
  * Middleware de autenticación JWT
  * Verifica que el usuario tenga un token válido
+ * SEGURIDAD: Valida el scope del token para tokens limitados
  */
 export const authenticate = async (req, res, next) => {
   try {
@@ -17,6 +18,20 @@ export const authenticate = async (req, res, next) => {
 
     // Verificar y decodificar token
     const decoded = verifyToken(token);
+
+    // VERIFICACIÓN DE SCOPE - TOKEN LIMITADO
+    // Si el token tiene scope CHANGE_PASSWORD_REQUIRED, solo permitir rutas específicas
+    if (decoded.scope === 'CHANGE_PASSWORD_REQUIRED') {
+      const isChangePasswordRoute = req.originalUrl.includes('/auth/change-password');
+      const isGetMeRoute = req.originalUrl.includes('/auth/me') && req.method === 'GET';
+      
+      if (!isChangePasswordRoute && !isGetMeRoute) {
+        throw new ForbiddenError(
+          'Debe cambiar su contraseña inicial antes de realizar otras acciones. ' +
+          'Por seguridad, el acceso a otras funcionalidades está restringido.'
+        );
+      }
+    }
 
     // Verificar que el usuario aún exista y esté activo
     const user = await prisma.user.findUnique({
@@ -38,8 +53,9 @@ export const authenticate = async (req, res, next) => {
       throw new ForbiddenError('Tu cuenta no está activa');
     }
 
-    // Agregar usuario al request
+    // Agregar usuario y scope al request para uso posterior
     req.user = user;
+    req.tokenScope = decoded.scope;
     next();
   } catch (error) {
     next(error);
