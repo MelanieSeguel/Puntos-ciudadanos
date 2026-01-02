@@ -122,6 +122,11 @@ export const TAB_CONFIG = {
       color: COLORS.admin,
     },
     {
+      name: 'Benefits',
+      label: 'Beneficios',
+      color: COLORS.admin,
+    },
+    {
       name: 'Approvals',
       label: 'Aprobaciones',
       color: COLORS.admin,
@@ -129,16 +134,6 @@ export const TAB_CONFIG = {
     {
       name: 'Users',
       label: 'Usuarios',
-      color: COLORS.admin,
-    },
-    {
-      name: 'Merchants',
-      label: 'Comercios',
-      color: COLORS.admin,
-    },
-    {
-      name: 'Reports',
-      label: 'Reportes',
       color: COLORS.admin,
     },
     {

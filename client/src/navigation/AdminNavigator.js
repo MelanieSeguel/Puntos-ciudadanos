@@ -1,7 +1,7 @@
 /**
  * AdminNavigator
  * Bottom Tab Navigator para admins
- * Pestañas: Dashboard, Usuarios, Comercios, Reportes
+ * Pestañas: Dashboard, Misiones, Beneficios, Aprobaciones, Usuarios, Configuración
  */
 
 import React, { useContext, useState } from 'react';
@@ -12,8 +12,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 import UsersManagementScreen from '../screens/admin/UsersManagementScreen';
-import MerchantsManagementScreen from '../screens/admin/MerchantsManagementScreen';
-import ReportsScreen from '../screens/admin/ReportsScreen';
+import BenefitsManagementScreen from '../screens/admin/BenefitsManagementScreen';
 import SubmissionsApprovalScreen from '../screens/admin/SubmissionsApprovalScreen';
 import SubmissionDetailScreen from '../screens/admin/SubmissionDetailScreen';
 import MissionsManagementScreen from '../screens/admin/MissionsManagementScreen';
@@ -152,8 +151,7 @@ export default function AdminNavigator() {
             const iconMap = {
               AdminDashboard: 'view-dashboard',
               Users: 'account-multiple',
-              Merchants: 'store',
-              Reports: 'chart-line',
+              Benefits: 'gift',
               Missions: 'target',
               Approvals: 'check-circle',
               Settings: 'cog',
@@ -186,6 +184,11 @@ export default function AdminNavigator() {
         options={{ headerShown: false, title: 'Misiones' }}
       />
       <Tab.Screen
+        name="Benefits"
+        component={BenefitsManagementScreen}
+        options={{ title: 'Beneficios' }}
+      />
+      <Tab.Screen
         name="Approvals"
         component={ApprovalsStack}
         options={{ headerShown: false, title: 'Aprobaciones' }}
@@ -194,16 +197,6 @@ export default function AdminNavigator() {
         name="Users"
         component={UsersManagementScreen}
         options={{ title: 'Usuarios' }}
-      />
-      <Tab.Screen
-        name="Merchants"
-        component={MerchantsManagementScreen}
-        options={{ title: 'Comercios' }}
-      />
-      <Tab.Screen
-        name="Reports"
-        component={ReportsScreen}
-        options={{ title: 'Reportes' }}
       />
       <Tab.Screen
         name="Settings"

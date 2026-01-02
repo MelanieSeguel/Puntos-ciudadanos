@@ -40,6 +40,87 @@ export default function AdminDashboardScreen() {
           <Text style={styles.sectionTitle}>Alertas Recientes</Text>
           <Text style={styles.sectionText}>No hay alertas pendientes</Text>
         </TouchableOpacity>
+
+        {/* Sección de Reportes */}
+        <View style={styles.reportsSection}>
+          <Text style={styles.reportsTitle}>📊 Reportes y Estadísticas</Text>
+          
+          <View style={styles.reportCard}>
+            <View style={styles.reportHeader}>
+              <MaterialCommunityIcons name="chart-line" size={24} color={COLORS.primary} />
+              <Text style={styles.reportCardTitle}>Actividad de Usuarios</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Nuevos esta semana:</Text>
+              <Text style={styles.reportValue}>24</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Activos hoy:</Text>
+              <Text style={styles.reportValue}>156</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Tasa de retención:</Text>
+              <Text style={[styles.reportValue, { color: COLORS.success }]}>87%</Text>
+            </View>
+          </View>
+
+          <View style={styles.reportCard}>
+            <View style={styles.reportHeader}>
+              <MaterialCommunityIcons name="target" size={24} color={COLORS.warning} />
+              <Text style={styles.reportCardTitle}>Misiones Completadas</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Esta semana:</Text>
+              <Text style={styles.reportValue}>342</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Pendientes aprobación:</Text>
+              <Text style={styles.reportValue}>18</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Tasa de aprobación:</Text>
+              <Text style={[styles.reportValue, { color: COLORS.success }]}>94%</Text>
+            </View>
+          </View>
+
+          <View style={styles.reportCard}>
+            <View style={styles.reportHeader}>
+              <MaterialCommunityIcons name="gift" size={24} color={COLORS.merchant} />
+              <Text style={styles.reportCardTitle}>Beneficios Canjeados</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Total esta semana:</Text>
+              <Text style={styles.reportValue}>89</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Puntos gastados:</Text>
+              <Text style={styles.reportValue}>4,520 pts</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Beneficio más popular:</Text>
+              <Text style={[styles.reportValue, { fontSize: TYPOGRAPHY.caption }]}>Café Gratis</Text>
+            </View>
+          </View>
+
+          <View style={styles.reportCard}>
+            <View style={styles.reportHeader}>
+              <MaterialCommunityIcons name="store" size={24} color={COLORS.success} />
+              <Text style={styles.reportCardTitle}>Comercios Activos</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Comercios registrados:</Text>
+              <Text style={styles.reportValue}>45</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Con canjes esta semana:</Text>
+              <Text style={styles.reportValue}>32</Text>
+            </View>
+            <View style={styles.reportRow}>
+              <Text style={styles.reportLabel}>Top comercio:</Text>
+              <Text style={[styles.reportValue, { fontSize: TYPOGRAPHY.caption }]}>Café Central</Text>
+            </View>
+          </View>
+        </View>
       </ScrollView>
     </ScreenWrapper>
   );
@@ -69,5 +150,50 @@ const styles = StyleSheet.create({
   sectionText: { fontSize: TYPOGRAPHY.body2, color: COLORS.gray },
   scrollContent: {
     paddingTop: Platform.OS === 'web' ? 0 : SPACING.md,
+  },
+  reportsSection: {
+    marginBottom: SPACING.xl,
+  },
+  reportsTitle: {
+    fontSize: TYPOGRAPHY.h4,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: SPACING.lg,
+  },
+  reportCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: LAYOUT.borderRadius.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    ...LAYOUT.shadowSmall,
+  },
+  reportHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  reportCardTitle: {
+    fontSize: TYPOGRAPHY.body1,
+    fontWeight: '700',
+    color: COLORS.dark,
+  },
+  reportRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SPACING.xs,
+  },
+  reportLabel: {
+    fontSize: TYPOGRAPHY.body2,
+    color: COLORS.gray,
+  },
+  reportValue: {
+    fontSize: TYPOGRAPHY.body1,
+    fontWeight: '700',
+    color: COLORS.dark,
   },
 });
