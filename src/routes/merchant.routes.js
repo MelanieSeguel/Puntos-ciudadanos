@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.js';
 import { isMerchantOrAdmin } from '../middlewares/authorize.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 import * as merchantController from '../controllers/merchant.controller.js';
 import prisma from '../config/database.js';
 
@@ -20,36 +21,13 @@ router.post(
 
 /**
  * POST /api/v1/merchant/validate-qr
- * DEPRECATED - Usar /redeem en su lugar
- * Mantenido por compatibilidad
+ * Validar QR de beneficio
  */
 router.post(
   '/validate-qr',
   authenticate,
   isMerchantOrAdmin,
-  async (req, res) => {
-    try {
-      const { qrCode } = req.body;
-      const merchantId = req.user.id;
-
-      if (!qrCode) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Falta el código QR' 
-        });
-      }
-
-      // Usar la nueva función redeemQRCode del controlador
-      const result = await merchantController.redeemQRCode({ body: { qrCode }, user: { id: merchantId } }, res);
-
-    } catch (error) {
-      const status = error.statusCode || 500;
-      res.status(status).json({ 
-        success: false, 
-        message: error.message || 'Error al validar cupón' 
-      });
-    }
-  }
+  merchantController.redeemQRCode
 );
 
 /**

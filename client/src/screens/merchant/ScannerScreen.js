@@ -10,7 +10,7 @@ import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
 import { merchantAPI } from '../../services/api';
 
-export default function ScannerScreen() {
+export default function ScannerScreen({ navigation }) {
   const [qrCode, setQrCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [lastValidation, setLastValidation] = useState(null);
@@ -30,12 +30,16 @@ export default function ScannerScreen() {
       console.log('[ScannerScreen] Respuesta:', response.data);
       
       if (response.data.success) {
-        const data = response.data.data;
-        setLastValidation(data);
+        const { user, benefit } = response.data.data;
+        setLastValidation({
+          userName: user.name,
+          benefitTitle: benefit.title,
+          pointsCost: benefit.pointsCost,
+        });
         
         Alert.alert(
-          '✅ Cupón Validado',
-          `Cliente: ${data.userName}\nBeneficio: ${data.benefitTitle}\nPuntos: ${data.pointsCost}`,
+          'Cupón Validado',
+          `Cliente: ${user.name}\nBeneficio: ${benefit.title}\nPuntos: ${benefit.pointsCost}`,
           [
             {
               text: 'OK',
@@ -49,7 +53,31 @@ export default function ScannerScreen() {
       }
     } catch (error) {
       console.error('[ScannerScreen] Error validando:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Error al validar cupón';
+      console.error('[ScannerScreen] Respuesta error:', error.response?.data);
+      
+      let errorMsg = 'Error al validar cupón';
+      
+      // Intentar obtener el mensaje de error del backend
+      if (error.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMsg = error.response.data.error;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      // Mensajes personalizados según el tipo de error
+      if (errorMsg.toLowerCase().includes('ya fue validado') || 
+          errorMsg.toLowerCase().includes('redeemed')) {
+        errorMsg = 'Este cupón ya fue validado previamente';
+      } else if (errorMsg.toLowerCase().includes('expirado') || 
+                 errorMsg.toLowerCase().includes('expired')) {
+        errorMsg = 'Este cupón ha expirado';
+      } else if (errorMsg.toLowerCase().includes('no encontrado') || 
+                 errorMsg.toLowerCase().includes('not found')) {
+        errorMsg = 'Cupón no encontrado o inválido';
+      }
+      
       Alert.alert('Error', errorMsg);
     } finally {
       setLoading(false);
@@ -86,20 +114,48 @@ export default function ScannerScreen() {
         </View>
       )}
 
-      {/* En Móvil: Área de escaneo - cámara */}
+      {/* En Móvil: Botón para abrir cámara */}
       {!isWeb && (
-        <View style={styles.scannerContainer}>
-          <View style={styles.scannerBox}>
-            <View style={[styles.scannerCorner, styles.cornerTopLeft]} />
-            <View style={[styles.scannerCorner, styles.cornerTopRight]} />
-            <View style={[styles.scannerCorner, styles.cornerBottomLeft]} />
-            <View style={[styles.scannerCorner, styles.cornerBottomRight]} />
-            <MaterialCommunityIcons name="camera" size={48} color={COLORS.merchant} style={styles.scannerIcon} />
-            <Text style={styles.scannerText}>Cámara</Text>
+        <TouchableOpacity 
+          style={styles.cameraButton}
+          onPress={() => navigation.navigate('QRScanner')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.cameraButtonContent}>
+            <MaterialCommunityIcons name="camera" size={48} color={COLORS.white} />
+            <Text style={styles.cameraButtonText}>Abrir Cámara</Text>
+            <Text style={styles.cameraButtonSubtext}>Escanear código QR</Text>
           </View>
-          <Text style={styles.scannerInstruction}>
-            Apunta tu cámara al código QR
-          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* En Móvil: Input manual alternativo */}
+      {!isWeb && (
+        <View style={styles.orDivider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>o ingresa manualmente</Text>
+          <View style={styles.dividerLine} />
+        </View>
+      )}
+
+      {/* Input manual también para móvil (como alternativa) */}
+      {!isWeb && (
+        <View style={styles.inputContainer}>
+          <MaterialCommunityIcons name="qrcode" size={24} color={COLORS.merchant} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            value={qrCode}
+            onChangeText={setQrCode}
+            placeholder="Código QR o ID"
+            placeholderTextColor={COLORS.gray}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {qrCode.length > 0 && (
+            <TouchableOpacity onPress={() => setQrCode('')} style={styles.clearButton}>
+              <MaterialCommunityIcons name="close-circle" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -201,7 +257,46 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: SPACING.xs,
   },
-  // Estilos para scanner de cámara (Móvil)
+  // Bot\u00f3n grande de c\u00e1mara para m\u00f3vil
+  cameraButton: {
+    backgroundColor: COLORS.merchant,
+    borderRadius: LAYOUT.borderRadius.lg,
+    padding: SPACING.xl * 1.5,
+    marginVertical: SPACING.xl,
+    alignItems: 'center',
+    ...LAYOUT.shadowMedium,
+  },
+  cameraButtonContent: {
+    alignItems: 'center',
+  },
+  cameraButtonText: {
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.h3,
+    fontWeight: '700',
+    marginTop: SPACING.md,
+  },
+  cameraButtonSubtext: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: TYPOGRAPHY.body2,
+    marginTop: SPACING.xs,
+  },
+  // Divider "o"
+  orDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: SPACING.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.light,
+  },
+  dividerText: {
+    paddingHorizontal: SPACING.md,
+    color: COLORS.gray,
+    fontSize: TYPOGRAPHY.caption,
+  },
+  // Estilos para scanner de c\u00e1mara (Móvil - deprecado, ahora se usa QRScannerScreen)
   scannerContainer: {
     marginVertical: SPACING.xl,
     alignItems: 'center',

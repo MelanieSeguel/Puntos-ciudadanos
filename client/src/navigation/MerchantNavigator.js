@@ -9,15 +9,18 @@ import React, { useState, useContext } from 'react';
 import { View, StyleSheet, Platform, TouchableOpacity, Text, ScrollView, Modal, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import MerchantDashboardScreen from '../screens/merchant/MerchantDashboardScreen';
 import ScannerScreen from '../screens/merchant/ScannerScreen';
+import QRScannerScreen from '../screens/merchant/QRScannerScreen';
 import HistoryScreen from '../screens/merchant/HistoryScreen';
 import WebHeader from '../components/WebHeader';
 import { AuthContext } from '../context/AuthContext';
 import { COLORS, SPACING } from '../theme/theme';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 const isWeb = Platform.OS === 'web';
 
 // ============================================================================
@@ -172,6 +175,31 @@ function WebLayout() {
 }
 
 // ============================================================================
+// COMPONENTE: Scanner Stack (para incluir QRScannerScreen en móvil)
+// ============================================================================
+function ScannerStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="ScannerMain" component={ScannerScreen} />
+      <Stack.Screen 
+        name="QRScanner" 
+        component={QRScannerScreen}
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: COLORS.merchant },
+          headerTintColor: COLORS.white,
+          headerTitle: 'Escanear QR',
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// ============================================================================
 // COMPONENTE: Mobile Layout (Bottom Tabs)
 // ============================================================================
 function MobileLayout() {
@@ -219,8 +247,8 @@ function MobileLayout() {
       />
       <Tab.Screen
         name="Scanner"
-        component={ScannerScreen}
-        options={{ title: 'Validar' }}
+        component={ScannerStack}
+        options={{ title: 'Validar', headerShown: false }}
       />
       <Tab.Screen
         name="History"

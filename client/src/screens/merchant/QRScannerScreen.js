@@ -8,26 +8,51 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { Camera } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import api from '../../services/api';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function QRScannerScreen({ navigation }) {
   const cameraRef = useRef(null);
-  const [hasPermission, setHasPermission] = useState(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [validating, setValidating] = useState(false);
 
-  // Solicitar permisos de cámara
-  useEffect(() => {
-    const getPermissions = async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    };
+  // Si los permisos aún no se han cargado
+  if (!permission) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#FF9800" />
+      </View>
+    );
+  }
 
-    getPermissions();
-  }, []);
+  // Si no hay permisos, solicitarlos
+  if (!permission.granted) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.centerContent}>
+          <Text style={styles.permissionTitle}>Permiso de Cámara</Text>
+          <Text style={styles.permissionText}>
+            Necesitamos acceso a la cámara para escanear códigos QR
+          </Text>
+          <TouchableOpacity
+            style={styles.permissionButton}
+            onPress={requestPermission}
+          >
+            <Text style={styles.permissionButtonText}>Permitir Acceso</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.closeButtonText}>Volver</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   // Manejar escaneo de QR
   const handleBarCodeScanned = async ({ type, data }) => {
@@ -35,30 +60,63 @@ export default function QRScannerScreen({ navigation }) {
     setScanned(true);
     setValidating(true);
 
+    console.log('[QRScanner] Código escaneado:', data);
+    console.log('[QRScanner] Tipo:', type);
+
     try {
-      // Enviar el transactionId/QR al backend
+      // Enviar el QR al backend
       const response = await api.post('/merchant/validate-qr', {
-        transactionId: data,
+        qrCode: data, // El backend espera 'qrCode', no 'transactionId'
       });
 
-      const { clienteName, productName, points } = response.data.data;
+      console.log('[QRScanner] Respuesta del servidor:', response.data);
+
+      // El backend devuelve datos anidados: user, benefit, etc.
+      const { user, benefit, pointsCharged } = response.data.data;
 
       // Mostrar alerta de éxito
-      Alert.alert('✅ Cupón Validado', `Cliente: ${clienteName}\nProducto: ${productName}\nPuntos: ${points}`, [
-        {
-          text: 'Volver al Dashboard',
-          onPress: () => {
-            setScanned(false);
-            navigation.goBack();
+      Alert.alert(
+        'Cupón Validado', 
+        `Cliente: ${user.name}\nBeneficio: ${benefit.title}\nPuntos: ${benefit.pointsCost}`, 
+        [
+          {
+            text: 'Aceptar',
+            onPress: () => {
+              setScanned(false);
+              navigation.goBack();
+            },
           },
-        },
-      ]);
+        ]
+      );
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || 'Error al validar el cupón';
+      console.error('[QRScanner] Error completo:', error);
+      console.error('[QRScanner] Respuesta error:', error.response?.data);
+      
+      let errorMessage = 'Error al validar el cupón';
+      
+      // Intentar obtener el mensaje de error del backend
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Mensajes personalizados según el tipo de error
+      if (errorMessage.toLowerCase().includes('ya fue validado') || 
+          errorMessage.toLowerCase().includes('redeemed')) {
+        errorMessage = 'Este cupón ya fue validado previamente';
+      } else if (errorMessage.toLowerCase().includes('expirado') || 
+                 errorMessage.toLowerCase().includes('expired')) {
+        errorMessage = 'Este cupón ha expirado';
+      } else if (errorMessage.toLowerCase().includes('no encontrado') || 
+                 errorMessage.toLowerCase().includes('not found')) {
+        errorMessage = 'Cupón no encontrado o inválido';
+      }
 
       // Mostrar alerta de error
-      Alert.alert('❌ Error', errorMessage, [
+      Alert.alert('Error al Validar', errorMessage, [
         {
           text: 'Intentar de nuevo',
           onPress: () => setScanned(false),
@@ -80,41 +138,14 @@ export default function QRScannerScreen({ navigation }) {
     navigation.goBack();
   };
 
-  if (hasPermission === null) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#FF9800" />
-      </View>
-    );
-  }
-
-  if (hasPermission === false) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.permissionTitle}>Permiso Denegado</Text>
-          <Text style={styles.permissionText}>
-            Se requiere acceso a la cámara para escanear QR
-          </Text>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleClose}
-          >
-            <Text style={styles.closeButtonText}>Cerrar</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <Camera
+      <CameraView
         ref={cameraRef}
         style={styles.camera}
-        onBarCodeScanned={handleBarCodeScanned}
-        barCodeScannerSettings={{
-          barCodeTypes: ['qr'],
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        barcodeScannerSettings={{
+          barcodeTypes: ['qr'],
         }}
       >
         {/* Overlay con marco de escaneo */}
@@ -157,7 +188,7 @@ export default function QRScannerScreen({ navigation }) {
             )}
           </View>
         </View>
-      </Camera>
+      </CameraView>
     </View>
   );
 }
@@ -166,6 +197,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  permissionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  permissionText: {
+    fontSize: 16,
+    color: '#ccc',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  permissionButton: {
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  permissionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 16,
   },
   camera: {
     flex: 1,
