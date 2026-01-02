@@ -7,6 +7,14 @@ const API_VERSION = 'v1';
 
 let API_URL = `http://${HOST_IP}:${PORT}/api/${API_VERSION}`;
 
+// Variable para almacenar la función de logout global
+let globalLogoutHandler = null;
+
+// Función para registrar el logout handler desde el AuthContext
+export const setGlobalLogoutHandler = (logoutFn) => {
+  globalLogoutHandler = logoutFn;
+};
+
 // Helper para obtener el token (compatible con navegador y React Native)
 const getToken = async () => {
   try {
@@ -53,7 +61,10 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Token inválido o expirado
+      console.warn('⚠️ Sesión expirada o token inválido (401). Ejecutando logout...');
+      
       try {
+        // Limpiar storage local
         if (AsyncStorage?.multiRemove) {
           await AsyncStorage.multiRemove(['userToken', 'userData', 'userRole']);
         } else if (typeof window !== 'undefined') {
@@ -61,7 +72,13 @@ api.interceptors.response.use(
           window.localStorage.removeItem('userData');
           window.localStorage.removeItem('userRole');
         }
+
+        // Ejecutar el logout global si está registrado
+        if (globalLogoutHandler) {
+          await globalLogoutHandler();
+        }
       } catch (err) {
+        console.error('Error en logout automático:', err);
       }
     }
     return Promise.reject(error);

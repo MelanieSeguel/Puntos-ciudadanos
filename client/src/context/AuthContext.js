@@ -1,10 +1,34 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authAPI } from '../services/api';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import { authAPI, setGlobalLogoutHandler } from '../services/api';
 import api from '../services/api';
 import { getErrorMessage, logError } from '../utils/errorHandler';
 
 export const AuthContext = createContext();
+
+// Wrapper para usar SecureStore en mobile y AsyncStorage en web
+const secureStorage = {
+  async setItem(key, value) {
+    if (Platform.OS === 'web') {
+      return AsyncStorage.setItem(key, value);
+    }
+    return SecureStore.setItemAsync(key, value);
+  },
+  async getItem(key) {
+    if (Platform.OS === 'web') {
+      return AsyncStorage.getItem(key);
+    }
+    return SecureStore.getItemAsync(key);
+  },
+  async removeItem(key) {
+    if (Platform.OS === 'web') {
+      return AsyncStorage.removeItem(key);
+    }
+    return SecureStore.deleteItemAsync(key);
+  },
+};
 
 export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({
@@ -19,13 +43,16 @@ export const AuthProvider = ({ children }) => {
   // Cargar datos de autenticación al iniciar la app
   useEffect(() => {
     loadStoredAuth();
+    
+    // Registrar el logout handler global para el interceptor de Axios
+    setGlobalLogoutHandler(logout);
   }, []);
 
   const loadStoredAuth = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      const userData = await AsyncStorage.getItem('userData');
-      const userRole = await AsyncStorage.getItem('userRole');
+      const token = await secureStorage.getItem('userToken');
+      const userData = await secureStorage.getItem('userData');
+      const userRole = await secureStorage.getItem('userRole');
 
       if (token && userData) {
         const user = JSON.parse(userData);
@@ -71,13 +98,13 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login(email, password);
       const { token, user } = response.data.data;
 
-      // Guardar en AsyncStorage
-      await AsyncStorage.setItem('userToken', token);
-      await AsyncStorage.setItem('userData', JSON.stringify(user));
+      // Guardar en SecureStore (cifrado en mobile)
+      await secureStorage.setItem('userToken', token);
+      await secureStorage.setItem('userData', JSON.stringify(user));
       
       // Guardar role solo si existe
       if (user.role) {
-        await AsyncStorage.setItem('userRole', user.role);
+        await secureStorage.setItem('userRole', user.role);
       }
 
       // Configurar header de axios
@@ -115,13 +142,13 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(name, email, password, password);
       const { token, user } = response.data.data;
 
-      // Guardar en AsyncStorage
-      await AsyncStorage.setItem('userToken', token);
-      await AsyncStorage.setItem('userData', JSON.stringify(user));
+      // Guardar en SecureStore (cifrado en mobile)
+      await secureStorage.setItem('userToken', token);
+      await secureStorage.setItem('userData', JSON.stringify(user));
       
       // Guardar role solo si existe
       if (user.role) {
-        await AsyncStorage.setItem('userRole', user.role);
+        await secureStorage.setItem('userRole', user.role);
       }
 
       // Configurar header de axios
@@ -154,8 +181,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Limpiar AsyncStorage
-      await AsyncStorage.multiRemove(['userToken', 'userData', 'userRole']);
+      // Limpiar SecureStore
+      await secureStorage.removeItem('userToken');
+      await secureStorage.removeItem('userData');
+      await secureStorage.removeItem('userRole');
 
       // Limpiar header de axios
       delete api.defaults.headers.common['Authorization'];
