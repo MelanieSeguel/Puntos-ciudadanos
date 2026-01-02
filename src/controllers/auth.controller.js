@@ -8,6 +8,7 @@ import {
   ForbiddenError 
 } from '../utils/errors.js';
 import { generateToken, createTokenPayload } from '../utils/jwt.js';
+import { validatePassword } from '../utils/password.js';
 import prisma from '../config/database.js';
 import config from '../config/index.js';
 
@@ -21,6 +22,12 @@ export const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
   // NOTA DE SEGURIDAD: Los datos ya fueron validados por el middleware validate(registerSchema)
   // en auth.routes.js antes de llegar aquí. No es necesario validar nuevamente.
+
+  // Validar fortaleza de contraseña
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.valid) {
+    throw new ValidationError(passwordValidation.errors.join('. '));
+  }
 
   // Verificar si el usuario ya existe
   const existingUser = await prisma.user.findUnique({
@@ -163,6 +170,12 @@ export const login = asyncHandler(async (req, res) => {
   // Remover passwordHash del objeto user
   const { passwordHash, ...userWithoutPassword } = user;
 
+  // Actualizar último login
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() },
+  });
+
   // Generar token completo para usuarios normales o admins con contraseña ya cambiada
   const token = generateToken(createTokenPayload(user));
 
@@ -253,6 +266,12 @@ export const updateProfile = asyncHandler(async (req, res) => {
 export const changePassword = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { currentPassword, newPassword } = req.body;
+
+  // Validar fortaleza de la nueva contraseña
+  const passwordValidation = validatePassword(newPassword);
+  if (!passwordValidation.valid) {
+    throw new ValidationError(passwordValidation.errors.join('. '));
+  }
 
   // Obtener usuario con contraseña
   const user = await prisma.user.findUnique({

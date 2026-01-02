@@ -4,6 +4,8 @@ import { authorize } from '../middlewares/authorize.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 import prisma from '../config/database.js';
+import bcrypt from 'bcrypt';
+import { generateSecurePassword, validatePassword } from '../utils/password.js';
 
 const router = express.Router();
 
@@ -203,6 +205,242 @@ router.post(
       { submission: updatedSubmission },
       'Envío rechazado',
       200
+    );
+  })
+);
+
+/**
+ * GET /api/v1/admin/users
+ * Obtener lista de usuarios con filtros
+ * Query params: role (USER, MERCHANT, MASTER_ADMIN), status (ACTIVE, INACTIVE, BANNED)
+ */
+router.get(
+  '/users',
+  authenticate,
+  authorize('MASTER_ADMIN', 'SUPPORT_ADMIN'),
+  asyncHandler(async (req, res) => {
+    const { role, status } = req.query;
+
+    const whereClause = {};
+    if (role) whereClause.role = role;
+    if (status) whereClause.status = status;
+
+    const users = await prisma.user.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLoginAt: true, // Agregar último login para admins
+        wallet: {
+          select: {
+            balance: true,
+          },
+        },
+        _count: {
+          select: {
+            missionSubmissions: true,
+            missionCompletions: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    successResponse(
+      res,
+      {
+        users,
+        total: users.length,
+      },
+      'Usuarios obtenidos exitosamente',
+      200
+    );
+  })
+);
+
+/**
+ * PATCH /api/v1/admin/users/:userId/status
+ * Cambiar estado de un usuario (activar/desactivar/banear)
+ */
+router.patch(
+  '/users/:userId/status',
+  authenticate,
+  authorize('MASTER_ADMIN'),
+  asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const { status } = req.body;
+
+    // Validar estado
+    const validStatuses = ['ACTIVE', 'INACTIVE', 'BANNED'];
+    if (!status || !validStatuses.includes(status)) {
+      return errorResponse(res, 'Estado inválido. Debe ser ACTIVE, INACTIVE o BANNED', 400);
+    }
+
+    // Verificar que el usuario existe
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return errorResponse(res, 'Usuario no encontrado', 404);
+    }
+
+    // Prevenir que el admin se desactive a sí mismo
+    if (user.id === req.user.id && status !== 'ACTIVE') {
+      return errorResponse(res, 'No puedes desactivar tu propia cuenta', 400);
+    }
+
+    // Actualizar estado
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { status },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    successResponse(
+      res,
+      { user: updatedUser },
+      `Usuario ${status === 'ACTIVE' ? 'activado' : status === 'INACTIVE' ? 'desactivado' : 'baneado'} exitosamente`,
+      200
+    );
+  })
+);
+
+/**
+ * POST /api/v1/admin/support-admins
+ * Crear un administrador de soporte (solo MASTER_ADMIN puede crear)
+ */
+router.post(
+  '/support-admins',
+  authenticate,
+  authorize('MASTER_ADMIN'),
+  asyncHandler(async (req, res) => {
+    const { name, email } = req.body;
+
+    // Validaciones
+    if (!name || !email) {
+      return errorResponse(res, 'Nombre y email son obligatorios', 400);
+    }
+
+    // Verificar que el email no exista
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (existingUser) {
+      return errorResponse(res, 'Este email ya está registrado', 400);
+    }
+
+    // Generar contraseña temporal segura (12 caracteres con mayúsculas, minúsculas, números y símbolos)
+    const temporaryPassword = generateSecurePassword(12);
+    const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+
+    // Crear usuario con rol SUPPORT_ADMIN
+    const newAdmin = await prisma.user.create({
+      data: {
+        name,
+        email: email.toLowerCase(),
+        passwordHash,
+        role: 'SUPPORT_ADMIN',
+        status: 'ACTIVE',
+        mustChangePassword: true, // Forzar cambio de contraseña
+        wallet: {
+          create: {
+            balance: 0,
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    successResponse(
+      res,
+      { admin: newAdmin, temporaryPassword },
+      'Administrador de soporte creado exitosamente',
+      201
+    );
+  })
+);
+
+/**
+ * POST /api/v1/admin/merchants
+ * Crear una cuenta de comercio (MASTER_ADMIN y SUPPORT_ADMIN pueden crear)
+ */
+router.post(
+  '/merchants',
+  authenticate,
+  authorize('MASTER_ADMIN', 'SUPPORT_ADMIN'),
+  asyncHandler(async (req, res) => {
+    const { name, email } = req.body;
+
+    // Validaciones
+    if (!name || !email) {
+      return errorResponse(res, 'Nombre y email son obligatorios', 400);
+    }
+
+    // Verificar que el email no exista
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (existingUser) {
+      return errorResponse(res, 'Este email ya está registrado', 400);
+    }
+
+    // Generar contraseña temporal segura (12 caracteres con mayúsculas, minúsculas, números y símbolos)
+    const temporaryPassword = generateSecurePassword(12);
+    const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+
+    // Crear usuario con rol MERCHANT
+    const newMerchant = await prisma.user.create({
+      data: {
+        name,
+        email: email.toLowerCase(),
+        passwordHash,
+        role: 'MERCHANT',
+        status: 'ACTIVE',
+        mustChangePassword: true, // Forzar cambio de contraseña
+        wallet: {
+          create: {
+            balance: 0,
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    successResponse(
+      res,
+      { merchant: newMerchant, temporaryPassword },
+      'Cuenta de comercio creada exitosamente',
+      201
     );
   })
 );

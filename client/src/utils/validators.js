@@ -2,8 +2,9 @@
  * Validadores de formularios para la aplicación
  */
 
+import { validatePassword as validatePasswordStrength } from './passwordValidator';
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_MIN_LENGTH = 6;
 const NAME_MIN_LENGTH = 2;
 
 /**
@@ -21,19 +22,23 @@ export const validateEmail = (email) => {
 };
 
 /**
- * Valida una contraseña
+ * Valida una contraseña con requisitos de seguridad modernos
  * @returns {valid: boolean, error: string}
  */
 export const validatePassword = (password) => {
   if (!password || !password.trim()) {
     return { valid: false, error: 'La contraseña es requerida' };
   }
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    return {
-      valid: false,
-      error: `La contraseña debe tener mínimo ${PASSWORD_MIN_LENGTH} caracteres`,
+  
+  // Usar el validador de seguridad de contraseñas
+  const validation = validatePasswordStrength(password);
+  if (!validation.valid) {
+    return { 
+      valid: false, 
+      error: validation.errors.join('\n• ') 
     };
   }
+  
   return { valid: true, error: null };
 };
 

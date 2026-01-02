@@ -151,6 +151,15 @@ export const adminAPI = {
     console.log('[API] Calling rejectSubmission with submissionId:', submissionId, 'reason:', reason);
     return api.post(`/admin/submissions/${submissionId}/reject`, { reason });
   },
+  getUsers: (role, status) => {
+    const params = new URLSearchParams();
+    if (role) params.append('role', role);
+    if (status) params.append('status', status);
+    return api.get(`/admin/users${params.toString() ? '?' + params.toString() : ''}`);
+  },
+  updateUserStatus: (userId, status) => api.patch(`/admin/users/${userId}/status`, { status }),
+  createSupportAdmin: (data) => api.post('/admin/support-admins', data),
+  createMerchant: (data) => api.post('/admin/merchants', data),
 };
 
 export default api;
