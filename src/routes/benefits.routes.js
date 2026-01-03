@@ -1,17 +1,36 @@
 import { Router } from 'express';
 import prisma from '../config/database.js';
 import { authenticate } from '../middlewares/auth.js';
+import * as cacheService from '../services/cache.service.js';
 
 const router = Router();
 
 /**
  * GET /api/v1/benefits
  * Listar beneficios disponibles
+ * CON CACHÉ: 10 minutos para reducir carga en BD
  */
 router.get('/', authenticate, async (req, res) => {
   try {
     const { category, active = 'true' } = req.query;
 
+    // Generar clave de caché basada en los parámetros
+    const cacheKey = category 
+      ? `${cacheService.CACHE_KEYS.ALL_BENEFITS}_${category}_${active}`
+      : `${cacheService.CACHE_KEYS.ALL_BENEFITS}_${active}`;
+
+    // Intentar obtener del caché
+    const cachedBenefits = cacheService.get(cacheKey);
+    if (cachedBenefits) {
+      return res.json({
+        success: true,
+        data: cachedBenefits,
+        total: cachedBenefits.length,
+        cached: true,
+      });
+    }
+
+    // Si no está en caché, consultar BD
     const where = {
       active: active === 'true',
       stock: { gt: 0 },
@@ -49,10 +68,14 @@ router.get('/', authenticate, async (req, res) => {
       },
     });
 
+    // Guardar en caché por 10 minutos
+    cacheService.set(cacheKey, benefits, 600);
+
     res.json({
       success: true,
       data: benefits,
       total: benefits.length,
+      cached: false,
     });
   } catch (error) {
     console.error('Error listando beneficios:', error);

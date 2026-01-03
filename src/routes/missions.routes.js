@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../config/database.js';
 import { authenticate } from '../middlewares/auth.js';
 import * as missionService from '../services/mission.service.js';
+import * as cacheService from '../services/cache.service.js';
 
 const router = Router();
 
@@ -12,6 +13,22 @@ const router = Router();
 router.get('/', authenticate, async (req, res) => {
   try {
     console.log('[GET /missions] Usuario:', req.user.id);
+    
+    // Generar clave de caché basada en userId (cada usuario puede tener diferentes cooldowns)
+    const cacheKey = `${cacheService.CACHE_KEYS.AVAILABLE_MISSIONS}_${req.user.id}`;
+    
+    // Verificar si los datos están en caché
+    const cachedMissions = cacheService.get(cacheKey);
+    if (cachedMissions) {
+      console.log('[GET /missions] Cache HIT para usuario:', req.user.id);
+      return res.json({
+        ...cachedMissions,
+        cached: true,
+      });
+    }
+    
+    console.log('[GET /missions] Cache MISS para usuario:', req.user.id);
+    
     const missions = await prisma.mission.findMany({
       where: {
         active: true,
@@ -68,12 +85,18 @@ router.get('/', authenticate, async (req, res) => {
 
     console.log('[GET /missions] Misiones encontradas:', missionsWithCooldown.length);
 
-    res.json({
+    const response = {
       success: true,
       message: 'Misiones obtenidas exitosamente',
       missions: missionsWithCooldown,
       total: missionsWithCooldown.length,
-    });
+      cached: false,
+    };
+    
+    // Guardar en caché por 600 segundos (10 minutos)
+    cacheService.set(cacheKey, response, 600);
+
+    res.json(response);
   } catch (error) {
     console.error('[GET /missions] Error listando misiones:', error);
     res.status(500).json({

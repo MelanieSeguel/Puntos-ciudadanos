@@ -1,5 +1,6 @@
 import prisma from '../config/database.js';
 import { AppError, NotFoundError, ValidationError, ConcurrencyError } from '../utils/errors.js';
+import * as cacheService from './cache.service.js';
 
 /**
  * Obtener transacciones de un usuario
@@ -355,6 +356,11 @@ export const redeemQRCode = async (qrCode, merchantId) => {
       benefit: true,
     },
   });
+
+  // Limpiar caché de beneficios (el stock o estado puede haber cambiado)
+  cacheService.del(cacheService.CACHE_KEYS.ALL_BENEFITS);
+  cacheService.del(`${cacheService.CACHE_KEYS.ALL_BENEFITS}_active`);
+  console.log('[QRScan] Caché de beneficios limpiado después de escaneo de QR');
 
   return {
     redemption: updatedRedemption,

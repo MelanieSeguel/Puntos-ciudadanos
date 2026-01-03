@@ -1,6 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { successResponse } from '../utils/response.js';
 import * as pointsService from '../services/points.service.js';
+import * as cacheService from '../services/cache.service.js';
 
 /**
  * GET /api/v1/points/transactions
@@ -64,6 +65,11 @@ export const redeemBenefit = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   const result = await pointsService.redeemBenefit(userId, benefitId);
+
+  // Limpiar caché de beneficios cuando se canjea (el stock cambia)
+  cacheService.del(cacheService.CACHE_KEYS.ALL_BENEFITS);
+  cacheService.del(`${cacheService.CACHE_KEYS.ALL_BENEFITS}_active`);
+  console.log('[Redeem] Caché de beneficios limpiado después de canje exitoso');
 
   successResponse(
     res,

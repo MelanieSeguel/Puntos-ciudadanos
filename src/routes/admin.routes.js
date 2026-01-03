@@ -6,6 +6,7 @@ import { successResponse, errorResponse } from '../utils/response.js';
 import prisma from '../config/database.js';
 import bcrypt from 'bcrypt';
 import { generateSecurePassword, validatePassword } from '../utils/password.js';
+import * as cacheService from '../services/cache.service.js';
 
 const router = express.Router();
 
@@ -150,6 +151,11 @@ router.post(
         description: `Misión aprobada: ${submission.mission.name}`,
       },
     });
+
+    // Limpiar caché de misiones del usuario (cooldown actualizado)
+    const missionCacheKey = `${cacheService.CACHE_KEYS.AVAILABLE_MISSIONS}_${submission.userId}`;
+    cacheService.del(missionCacheKey);
+    console.log(`[Admin] Caché de misiones limpiado para usuario ${submission.userId}`);
 
     successResponse(
       res,
