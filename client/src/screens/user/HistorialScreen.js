@@ -40,6 +40,11 @@ export default function HistorialScreen() {
       const formattedHistorial = transactions.map(t => {
         const isMissionApproved = t.type === 'EARNED' && t.description?.includes('Misión aprobada');
         
+        // Debug: verificar metadata
+        if (t.type === 'SPENT') {
+          console.log('Transaction SPENT:', { id: t.id, hasMetadata: !!t.metadata, metadata: t.metadata, benefitId: t.benefitId });
+        }
+        
         const iconMap = {
           EARNED: isMissionApproved ? 'trophy' : 'plus-circle',
           SPENT: 'gift',
@@ -154,7 +159,7 @@ export default function HistorialScreen() {
   return (
     <ScreenWrapper bgColor={COLORS.light} safeArea={false} padding={0}>
       <ScrollView 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Filtros */}
@@ -380,7 +385,7 @@ const styles = StyleSheet.create({
   },
   historialItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: SPACING.md,
     paddingVertical: 0,
     paddingLeft: SPACING.md,
@@ -389,6 +394,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.light,
+    minHeight: 76,
   },
   itemIcon: {
     width: 44,
@@ -438,7 +444,7 @@ const styles = StyleSheet.create({
   },
   qrButton: {
     width: 50,
-    alignSelf: 'stretch',
+    height: '100%',
     borderTopRightRadius: 7,
     borderBottomRightRadius: 7,
     backgroundColor: COLORS.primary,

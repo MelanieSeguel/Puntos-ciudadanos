@@ -5,6 +5,7 @@ README.md
 .env
 .env.example
 node_modules
+client/node_modules
 npm-debug.log
 docker-compose.yml
 Dockerfile

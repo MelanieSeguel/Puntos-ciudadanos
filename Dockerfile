@@ -25,18 +25,15 @@ RUN apk add --no-cache openssl libc6-compat
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy node_modules from builder
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
+# Copy node_modules from builder (with ownership change on-the-fly)
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 
-# Copy application code
-COPY . .
+# Copy application code (with ownership change on-the-fly)
+COPY --chown=nodejs:nodejs . .
 
-# Generate Prisma Client before switching user
+# Generate Prisma Client (user already owns files, won't fail)
 RUN npx prisma generate
-
-# Change ownership to nodejs user
-RUN chown -R nodejs:nodejs /app
 
 # Switch to non-root user
 USER nodejs
