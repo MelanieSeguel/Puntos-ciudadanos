@@ -1,15 +1,16 @@
 /**
  * EarnScreen - Pantalla para Ganar Puntos
  * Muestra formas de ganar puntos
+ * Optimizado con React Query para caché inteligente
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
-import { missionsAPI } from '../../services/api';
+import { useAvailableMissions } from '../../hooks/useUserData';
 
 function EarnScreenComponent({ navigation: navigationProp }) {
   // En web usar el prop, en móvil usar el hook
@@ -20,31 +21,13 @@ function EarnScreenComponent({ navigation: navigationProp }) {
     navigation = useNavigation();
   }
 
-  const [missions, setMissions] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
-
-  React.useEffect(() => {
-    loadMissions();
-  }, []);
-
-  const loadMissions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await missionsAPI.getAvailable();
-      console.log('[EarnScreen] Respuesta API:', response.data);
-      const missionsData = response.data.missions || response.data.data || [];
-      console.log('[EarnScreen] Misiones parseadas:', missionsData);
-      console.log('[EarnScreen] Cantidad de misiones:', missionsData.length);
-      setMissions(missionsData);
-    } catch (err) {
-      console.error('[EarnScreen] Error cargando misiones:', err);
-      setError('No pudimos cargar las misiones');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // React Query hook - caché de 10 minutos para misiones
+  const {
+    data: missions = [],
+    isLoading: loading,
+    error,
+    refetch,
+  } = useAvailableMissions();
 
   const handleMissionPress = (mission) => {
     console.log('[EarnScreen] Navegando a MissionSubmission', mission.id);
@@ -214,15 +197,15 @@ function EarnScreenComponent({ navigation: navigationProp }) {
   return (
     <ScreenWrapper bgColor={COLORS.light} safeArea={false} maxWidth={false} padding={0}>
       <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 90 : SPACING.md }]}>
-        {loading ? (
+        {loading && missions.length === 0 ? (
           <View style={styles.centerContent}>
             <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.loadingText}>Cargando misiones...</Text>
           </View>
         ) : error ? (
           <View style={styles.centerContent}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadMissions}>
+            <Text style={styles.errorText}>No pudimos cargar las misiones</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={refetch}>
               <Text style={styles.retryText}>Reintentar</Text>
             </TouchableOpacity>
           </View>
@@ -236,6 +219,9 @@ function EarnScreenComponent({ navigation: navigationProp }) {
             style={styles.list}
             numColumns={Platform.OS === 'web' ? 3 : 1}
             key={Platform.OS === 'web' ? 'grid' : 'list'}
+            refreshControl={
+              <RefreshControl refreshing={loading && missions.length > 0} onRefresh={refetch} />
+            }
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <MaterialCommunityIcons name="lightning-bolt-outline" size={64} color={COLORS.gray} />

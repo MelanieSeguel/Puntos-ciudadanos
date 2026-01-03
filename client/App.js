@@ -8,6 +8,7 @@ import { StatusBar, ActivityIndicator, View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import SplashScreen from './src/screens/SplashScreen';
@@ -16,6 +17,19 @@ import UserNavigator from './src/navigation/UserNavigator';
 import MerchantNavigator from './src/navigation/MerchantNavigator';
 import AdminNavigator from './src/navigation/AdminNavigator';
 import { COLORS } from './src/theme/theme';
+
+// Configuración del QueryClient para caché inteligente
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutos por defecto
+      cacheTime: 1000 * 60 * 30, // 30 minutos en caché
+      refetchOnWindowFocus: true, // Actualizar al volver a la app
+      refetchOnReconnect: true, // Actualizar al reconectar internet
+      retry: 2, // Reintentar 2 veces en caso de error
+    },
+  },
+});
 
 const RootStack = createNativeStackNavigator();
 
@@ -144,12 +158,14 @@ function AppContent() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <AppContent />
-          <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-        </AuthProvider>
-      </SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <AppContent />
+            <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+          </AuthProvider>
+        </SafeAreaProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

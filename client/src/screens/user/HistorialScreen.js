@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,95 +13,70 @@ import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme/theme';
-import { pointsAPI } from '../../services/api';
 import { getErrorMessage } from '../../utils/errorHandler';
+import { useAllTransactions } from '../../hooks/useUserData';
 
 export default function HistorialScreen() {
   const navigation = useNavigation();
-  const [historial, setHistorial] = useState([]);
-  const [allHistorial, setAllHistorial] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('Todos');
 
-  useEffect(() => {
-    loadHistorial();
-  }, []);
+  // React Query hook - caché de 2 minutos para transacciones
+  const {
+    data: transactions = [],
+    isLoading: loading,
+    error,
+    refetch,
+  } = useAllTransactions(100);
+  // Procesar y formatear transacciones con useMemo
+  const allHistorial = useMemo(() => {
+    return transactions.map(t => {
+      const isMissionApproved = t.type === 'EARNED' && t.description?.includes('Misión aprobada');
+      
+      const iconMap = {
+        EARNED: isMissionApproved ? 'trophy' : 'plus-circle',
+        SPENT: 'gift',
+        TRANSFER: 'swap-horizontal',
+      };
+      
+      const colorMap = {
+        EARNED: '#4CAF50',
+        SPENT: '#f44336',
+        TRANSFER: '#2196F3',
+      };
 
-  const loadHistorial = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await pointsAPI.getTransactions(100, 0);
-      const transactions = response.data?.data || [];
-      
-      const formattedHistorial = transactions.map(t => {
-        const isMissionApproved = t.type === 'EARNED' && t.description?.includes('Misión aprobada');
-        
-        // Debug: verificar metadata
-        if (t.type === 'SPENT') {
-          console.log('Transaction SPENT:', { id: t.id, hasMetadata: !!t.metadata, metadata: t.metadata, benefitId: t.benefitId });
-        }
-        
-        const iconMap = {
-          EARNED: isMissionApproved ? 'trophy' : 'plus-circle',
-          SPENT: 'gift',
-          TRANSFER: 'swap-horizontal',
-        };
-        
-        const colorMap = {
-          EARNED: '#4CAF50',
-          SPENT: '#f44336',
-          TRANSFER: '#2196F3',
-        };
-
-        return {
-          id: t.id,
-          title: t.description || 'Transacción',
-          description: t.type === 'EARNED' 
-            ? (isMissionApproved ? 'Misión completada' : 'Puntos ganados')
-            : t.type === 'SPENT' 
-              ? 'Beneficio canjeado' 
-              : 'Transferencia',
-          points: `${t.type === 'EARNED' ? '+' : '-'}${t.amount}`,
-          color: colorMap[t.type] || '#9C27B0',
-          icon: iconMap[t.type] || 'history',
-          date: t.createdAt,
-          type: t.type,
-          metadata: t.metadata, // Incluir metadata con redemptionId, qrCode, etc.
-          benefitId: t.benefitId, // ID del beneficio
-        };
-      });
-      
-      setAllHistorial(formattedHistorial);
-      setHistorial(formattedHistorial);
-    } catch (err) {
-      const errorMessage = getErrorMessage(err);
-      setError(errorMessage);
-      console.error('[HistorialScreen] Error al cargar historial:', err);
-    } finally {
-      setLoading(false);
+      return {
+        id: t.id,
+        title: t.description || 'Transacción',
+        description: t.type === 'EARNED' 
+          ? (isMissionApproved ? 'Misión completada' : 'Puntos ganados')
+          : t.type === 'SPENT' 
+            ? 'Beneficio canjeado' 
+            : 'Transferencia',
+        points: `${t.type === 'EARNED' ? '+' : '-'}${t.amount}`,
+        color: colorMap[t.type] || '#9C27B0',
+        icon: iconMap[t.type] || 'history',
+        date: t.createdAt,
+        type: t.type,
+        metadata: t.metadata,
+        benefitId: t.benefitId,
+      };
+    });
+  }, [transactions]);
+  
+  // Filtrar transacciones con useMemo
+  const historial = useMemo(() => {
+    if (activeFilter === 'Todos') {
+      return allHistorial;
     }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadHistorial();
-    setRefreshing(false);
-  };
+    return allHistorial.filter(item => item.type === activeFilter);
+  }, [activeFilter, allHistorial]);
 
   const applyFilter = (filter) => {
     setActiveFilter(filter);
-    
-    if (filter === 'Todos') {
-      setHistorial(allHistorial);
-      return;
-    }
+  };
 
-    const filtered = allHistorial.filter(item => item.type === filter);
-    setHistorial(filtered);
+  const onRefresh = async () => {
+    await refetch();
   };
 
   const formatDate = (dateString) => {
@@ -145,7 +120,7 @@ export default function HistorialScreen() {
     });
   };
 
-  if (loading) {
+  if (loading && !transactions.length) {
     return (
       <ScreenWrapper bgColor={COLORS.light} safeArea={false}>
         <View style={styles.centerContainer}>
@@ -160,7 +135,7 @@ export default function HistorialScreen() {
     <ScreenWrapper bgColor={COLORS.light} safeArea={false} padding={0}>
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={loading && transactions.length > 0} onRefresh={onRefresh} />}
       >
         {/* Filtros */}
         <View style={styles.filtersContainer}>
@@ -201,8 +176,8 @@ export default function HistorialScreen() {
         {error && (
           <View style={styles.errorContainer}>
             <MaterialCommunityIcons name="alert-circle" size={24} color={COLORS.error} />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadHistorial}>
+            <Text style={styles.errorText}>{getErrorMessage(error)}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={refetch}>
               <Text style={styles.retryText}>Reintentar</Text>
             </TouchableOpacity>
           </View>

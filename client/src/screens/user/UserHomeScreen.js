@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   Dimensions,
   Platform,
 } from 'react-native';
@@ -15,9 +14,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme/theme';
-import { walletAPI, benefitsAPI, pointsAPI, missionsAPI } from '../../services/api';
 import { getErrorMessage } from '../../utils/errorHandler';
 import { AuthContext } from '../../context/AuthContext';
+import {
+  useUserBalance,
+  useRecentTransactions,
+  useAvailableMissions,
+  useAvailableBenefits,
+} from '../../hooks/useUserData';
 
 const { width } = Dimensions.get('window');
 
@@ -25,193 +29,151 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
   // En web se pasa como prop, en móvil usar el hook
   const hookNavigation = useNavigation();
   const navigation = Platform.OS === 'web' && navigationProp ? navigationProp : hookNavigation;
-  const { authState, logout } = useContext(AuthContext);
+  const { authState } = useContext(AuthContext);
 
-  const [userData, setUserData] = useState({ name: 'Usuario', email: '' });
-  const [balance, setBalance] = useState(0);
-  const [monthlyPoints, setMonthlyPoints] = useState(0);
-  const [monthlyGoal] = useState(500);
-  const [activities, setActivities] = useState([]);
-  const [earnOptions, setEarnOptions] = useState([]);
-  const [benefits, setBenefits] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const monthlyGoal = 500;
 
-  useEffect(() => {
-    // Solo cargar datos si el usuario está autenticado
-    if (authState.authenticated && authState.token) {
-      loadData();
-    } else {
-      setUserData({ name: 'Usuario no autenticado', email: '' });
-      setError('Por favor inicia sesión para ver tus datos');
-    }
-  }, [authState.authenticated, authState.token]);
+  // React Query hooks - Reemplazan todos los useState y useEffect
+  const {
+    data: user,
+    isLoading: isLoadingUser,
+    error: userError,
+    refetch: refetchUser,
+  } = useUserBalance();
 
-  // Auto-refresh cada 2 minutos
-  useEffect(() => {
-    if (!authState.authenticated || !authState.token) return;
+  const {
+    data: transactions = [],
+    isLoading: isLoadingTransactions,
+    error: transactionsError,
+    refetch: refetchTransactions,
+  } = useRecentTransactions(5);
 
-    const interval = setInterval(() => {
-      loadData();
-    }, 120000); // 2 minutos
+  const {
+    data: missions = [],
+    isLoading: isLoadingMissions,
+    error: missionsError,
+    refetch: refetchMissions,
+  } = useAvailableMissions(4);
 
-    return () => clearInterval(interval);
-  }, [authState.authenticated, authState.token]);
+  const {
+    data: benefitsData = [],
+    isLoading: isLoadingBenefits,
+    error: benefitsError,
+    refetch: refetchBenefits,
+  } = useAvailableBenefits(4);
 
-  const loadData = async () => {
-    // Prevenir múltiples cargas simultáneas
-    if (isLoadingData) {
-      console.log('[UserHomeScreen] Ya hay una carga en progreso, omitiendo...');
-      return;
-    }
-
-    try {
-      setIsLoadingData(true);
-      setLoading(true);
-      setError(null);
-
-      // Verificar autenticación
-      if (!authState.authenticated || !authState.token) {
-        setError('No autenticado. Por favor inicia sesión.');
-        return;
-      }
-
-      const [userRes, benefitsRes, transactionsRes, missionsRes] = await Promise.all([
-        walletAPI.getBalance(),
-        benefitsAPI.getAll(),
-        pointsAPI.getTransactions(5, 0),
-        missionsAPI.getAvailable(),
-      ]);
-
-      // Extraer datos del usuario
-      const user = userRes.data?.data;
+  // Procesar datos del usuario
+  const userData = {
+    name: user?.name || 'Usuario',
+    email: user?.email || '',
+  };
+  const balance = user?.wallet?.balance || 0;
+  // Procesar actividades recientes con useMemo (solo se recalcula si transactions cambia)
+  const activities = useMemo(() => {
+    return transactions.slice(0, 3).map(t => {
+      const isMissionApproved = t.type === 'EARNED' && t.description?.includes('Misión aprobada');
       
-      if (user) {
-        setUserData({
-          name: user.name || 'Usuario',
-          email: user.email || '',
-        });
-        setBalance(user.wallet?.balance || 0);
+      const iconMap = {
+        EARNED: isMissionApproved ? 'trophy' : 'plus-circle',
+        SPENT: 'gift',
+        TRANSFER: 'swap-horizontal',
+      };
+      const colorMap = {
+        EARNED: isMissionApproved ? '#FF9800' : '#4CAF50',
+        SPENT: '#FF9800',
+        TRANSFER: '#2196F3',
+      };
+      
+      const pointsColor = t.type === 'EARNED' ? '#4CAF50' : '#F44336';
+
+      const date = new Date(t.createdAt);
+      const today = new Date();
+      const isToday = date.toDateString() === today.toDateString();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const isYesterday = date.toDateString() === yesterday.toDateString();
+
+      let timeString;
+      if (isToday) {
+        timeString = `Hoy, ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (isYesterday) {
+        timeString = `Ayer, ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
       } else {
-        setUserData({ name: 'Usuario', email: '' });
+        timeString = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
       }
 
-      // Extraer y procesar transacciones
-      const transactionsList = (transactionsRes.data?.data || []);
-      const formattedActivities = transactionsList.slice(0, 3).map(t => {
-        // Detectar si es una misión aprobada
-        const isMissionApproved = t.type === 'EARNED' && t.description?.includes('Misión aprobada');
-        
-        const iconMap = {
-          EARNED: isMissionApproved ? 'trophy' : 'plus-circle',
-          SPENT: 'gift',
-          TRANSFER: 'swap-horizontal',
-        };
-        const colorMap = {
-          EARNED: isMissionApproved ? '#FF9800' : '#4CAF50',
-          SPENT: '#FF9800',
-          TRANSFER: '#2196F3',
-        };
-        
-        // Colores para los puntos en actividad reciente: verde para positivos, rojo para negativos
-        const pointsColor = t.type === 'EARNED' ? '#4CAF50' : '#F44336';
-
-        const date = new Date(t.createdAt);
-        const today = new Date();
-        const isToday = date.toDateString() === today.toDateString();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const isYesterday = date.toDateString() === yesterday.toDateString();
-
-        let timeString;
-        if (isToday) {
-          timeString = `Hoy, ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
-        } else if (isYesterday) {
-          timeString = `Ayer, ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
-        } else {
-          timeString = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-        }
-
-        // Usar la descripción real de la transacción
-        let subtitle;
-        if (t.type === 'EARNED') {
-          subtitle = isMissionApproved ? 'Misión completada' : 'Puntos ganados';
-        } else if (t.type === 'SPENT') {
-          subtitle = 'Beneficio canjeado';
-        } else {
-          subtitle = 'Transferencia';
-        }
-
-        return {
-          id: t.id,
-          title: t.description || 'Transacción',
-          description: subtitle,
-          points: `${t.type === 'EARNED' ? '+' : '-'}${t.amount}`,
-          pointsColor: pointsColor, // Color específico para los puntos
-          color: colorMap[t.type] || '#9C27B0', // Color del icono
-          icon: iconMap[t.type] || 'history',
-          time: timeString,
-        };
-      });
-      setActivities(formattedActivities);
-      
-      // Calcular puntos mensuales
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const monthlyTransactions = transactionsList.filter(t => {
-        const tDate = new Date(t.createdAt);
-        return tDate >= monthStart && t.type === 'EARNED';
-      });
-      const monthlyEarned = monthlyTransactions.reduce((sum, t) => sum + t.amount, 0);
-      setMonthlyPoints(monthlyEarned);
-
-      // Extraer beneficios
-      const beneficisList = (benefitsRes.data?.data || []).slice(0, 4).map(b => ({
-        id: b.id,
-        name: b.title,
-        description: b.description,
-        pointsCost: b.pointsCost,
-        stock: b.stock,
-        redeemable: b.stock > 0,
-      }));
-      setBenefits(beneficisList);
-
-      // Extraer misiones disponibles
-      const missionsList = (missionsRes.data?.missions || missionsRes.data?.data || []).slice(0, 4).map(m => ({
-        id: m.id,
-        title: m.title || m.name,
-        description: m.description?.substring(0, 40) + '...' || 'Completa esta misión',
-        points: `+${m.points}`,
-        icon: m.icon || 'star',
-      }));
-      setEarnOptions(missionsList);
-
-    } catch (err) {
-      const errorMessage = getErrorMessage(err);
-      setError(errorMessage);
-      console.error('[UserHomeScreen] Error al cargar datos:', err.response?.status, err.message);
-      
-      // Si es 401, el token es inválido
-      if (err.response?.status === 401) {
-        console.warn('[UserHomeScreen] Token inválido, desconectando usuario');
-        await logout();
+      let subtitle;
+      if (t.type === 'EARNED') {
+        subtitle = isMissionApproved ? 'Misión completada' : 'Puntos ganados';
+      } else if (t.type === 'SPENT') {
+        subtitle = 'Beneficio canjeado';
+      } else {
+        subtitle = 'Transferencia';
       }
-    } finally {
-      setLoading(false);
-      setIsLoadingData(false);
-    }
-  };
 
+      return {
+        id: t.id,
+        title: t.description || 'Transacción',
+        description: subtitle,
+        points: `${t.type === 'EARNED' ? '+' : '-'}${t.amount}`,
+        pointsColor: pointsColor,
+        color: colorMap[t.type] || '#9C27B0',
+        icon: iconMap[t.type] || 'history',
+        time: timeString,
+      };
+    });
+  }, [transactions]);
+  
+  // Calcular puntos mensuales con useMemo
+  const monthlyPoints = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthlyTransactions = transactions.filter(t => {
+      const tDate = new Date(t.createdAt);
+      return tDate >= monthStart && t.type === 'EARNED';
+    });
+    return monthlyTransactions.reduce((sum, t) => sum + t.amount, 0);
+  }, [transactions]);
+
+  // Procesar beneficios
+  const benefits = useMemo(() => {
+    return benefitsData.map(b => ({
+      id: b.id,
+      name: b.title,
+      description: b.description,
+      pointsCost: b.pointsCost,
+      stock: b.stock,
+      redeemable: b.stock > 0,
+    }));
+  }, [benefitsData]);
+
+  // Procesar misiones
+  const earnOptions = useMemo(() => {
+    return missions.map(m => ({
+      id: m.id,
+      title: m.title || m.name,
+      description: m.description?.substring(0, 40) + '...' || 'Completa esta misión',
+      points: `+${m.points}`,
+      icon: m.icon || 'star',
+    }));
+  }, [missions]);
+
+  // Estado de carga y errores
+  const loading = isLoadingUser || isLoadingTransactions || isLoadingMissions || isLoadingBenefits;
+  const error = userError || transactionsError || missionsError || benefitsError;
+  const refreshing = false; // React Query maneja el refreshing automáticamente
+
+  // Función de refresh manual
   const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
+    await Promise.all([
+      refetchUser(),
+      refetchTransactions(),
+      refetchMissions(),
+      refetchBenefits(),
+    ]);
   };
 
-
-  if (loading) {
+  if (loading && !user) {
     return (
       <ScreenWrapper bgColor={COLORS.white}>
         <View style={styles.centerContainer}>

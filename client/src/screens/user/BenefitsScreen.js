@@ -1,86 +1,69 @@
 /**
  * BenefitsScreen - Pantalla de Beneficios para Usuarios
  * Muestra beneficios disponibles y canjeados
+ * Optimizado con React Query para caché inteligente
  */
 
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import React, { useState, useContext, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../../theme/theme';
-import { benefitsAPI, walletAPI } from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import { getErrorMessage } from '../../utils/errorHandler';
+import { useAvailableBenefits, useUserBalance } from '../../hooks/useUserData';
 
 export default function BenefitsScreen({ navigation: navigationProp }) {
   const hookNavigation = useNavigation();
   const navigation = Platform.OS === 'web' && navigationProp ? navigationProp : hookNavigation;
   const { authState } = useContext(AuthContext);
-  const [allBenefits, setAllBenefits] = useState([]); // Todos los beneficios sin filtrar
-  const [benefits, setBenefits] = useState([]); // Beneficios filtrados
-  const [userBalance, setUserBalance] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('Todos');
 
-  useEffect(() => {
-    if (authState.authenticated) {
-      loadData();
-    }
-  }, [authState.authenticated]);
+  // React Query hooks - caché de 30 minutos para beneficios
+  const {
+    data: allBenefits = [],
+    isLoading: isLoadingBenefits,
+    error: benefitsError,
+    refetch: refetchBenefits,
+  } = useAvailableBenefits();
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const {
+    data: user,
+    isLoading: isLoadingUser,
+    error: userError,
+    refetch: refetchUser,
+  } = useUserBalance();
 
-      const [benefitsRes, userRes] = await Promise.all([
-        benefitsAPI.getAll(),
-        walletAPI.getBalance(),
-      ]);
+  const userBalance = user?.wallet?.balance || 0;
 
-      const benefitsList = benefitsRes.data?.data || [];
-      console.log('[BenefitsScreen] Primer beneficio:', JSON.stringify(benefitsList[0], null, 2));
-      setAllBenefits(benefitsList);
-      applyFilter('Todos', benefitsList); // Aplicar filtro inicial
-
-      const user = userRes.data?.data;
-      setUserBalance(user?.wallet?.balance || 0);
-    } catch (err) {
-      const errorMessage = getErrorMessage(err);
-      setError(errorMessage);
-      console.error('[BenefitsScreen] Error al cargar datos:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
-
-  // Filtrado local sin peticiones al servidor
-  const applyFilter = (filter, benefitsList = allBenefits) => {
-    setActiveFilter(filter);
-    
-    if (filter === 'Todos') {
-      setBenefits(benefitsList);
-      return;
+  // Filtrado local con useMemo - solo recalcula si cambia activeFilter o allBenefits
+  const benefits = useMemo(() => {
+    if (activeFilter === 'Todos') {
+      return allBenefits;
     }
 
     const categoryMap = {
       'Comida': ['COMIDA', 'POSTRE', 'BEBIDA'],
       'Servicios': ['SERVICIO'],
-      'Cultura': ['CULTURA'], // Por si agregan esta categoría
+      'Cultura': ['CULTURA'],
     };
 
-    const categories = categoryMap[filter] || [];
-    const filtered = benefitsList.filter(b => categories.includes(b.category));
-    setBenefits(filtered);
+    const categories = categoryMap[activeFilter] || [];
+    return allBenefits.filter(b => categories.includes(b.category));
+  }, [activeFilter, allBenefits]);
+
+  // Estado de carga y errores
+  const loading = isLoadingBenefits || isLoadingUser;
+  const error = benefitsError || userError;
+
+  // Función de refresh manual
+  const onRefresh = async () => {
+    await Promise.all([refetchBenefits(), refetchUser()]);
+  };
+
+  const applyFilter = (filter) => {
+    setActiveFilter(filter);
   };
 
   const handleBenefitPress = (benefit) => {
@@ -254,8 +237,8 @@ export default function BenefitsScreen({ navigation: navigationProp }) {
         {error && (
           <View style={styles.errorContainer}>
             <MaterialCommunityIcons name="alert-circle" size={24} color={COLORS.error} />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadData}>
+            <Text style={styles.errorText}>{getErrorMessage(error)}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
               <Text style={styles.retryButtonText}>Reintentar</Text>
             </TouchableOpacity>
           </View>
@@ -271,7 +254,7 @@ export default function BenefitsScreen({ navigation: navigationProp }) {
           numColumns={Platform.OS === 'web' ? 3 : 1}
           key={Platform.OS === 'web' ? 'grid' : 'list'}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl refreshing={loading && !allBenefits.length} onRefresh={onRefresh} />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
