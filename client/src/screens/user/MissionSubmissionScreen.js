@@ -71,11 +71,14 @@ export default function MissionSubmissionScreen({ route, navigation }) {
       setLoading(true);
       setError(null);
       
-      // Enviar evidencia a la API
-      // Usando la primera imagen como evidenceUrl o un string de prueba
+      // Enviar evidencia a la API con descripción
       const evidenceUrl = attachments[0]?.uri || 'https://via.placeholder.com/300';
       
-      const response = await missionsAPI.submitEvidence(missionId, evidenceUrl);
+      const response = await missionsAPI.submitEvidence(
+        missionId,
+        evidenceUrl,
+        description.trim() // Enviar la descripción del usuario
+      );
       
       if (response.data.success) {
         // Mostrar alert
@@ -230,9 +233,14 @@ export default function MissionSubmissionScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.xl,
+    paddingHorizontal: Platform.OS === 'web' ? SPACING.lg : SPACING.md,
+    paddingTop: Platform.OS === 'web' ? SPACING.xl : SPACING.md,
+    paddingBottom: SPACING.xl * 2,
+    ...(Platform.OS === 'web' && {
+      maxWidth: 900,
+      alignSelf: 'center',
+      width: '100%',
+    }),
   },
   header: {
     flexDirection: 'row',

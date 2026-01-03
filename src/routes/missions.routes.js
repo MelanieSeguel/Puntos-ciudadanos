@@ -137,7 +137,7 @@ router.get('/:id', authenticate, async (req, res) => {
 router.post('/:missionId/submit', authenticate, async (req, res) => {
   try {
     const { missionId } = req.params;
-    const { evidenceUrl } = req.body;
+    const { evidenceUrl, description } = req.body;
     const userId = req.user.id;
 
     // Validar que la misión existe
@@ -157,6 +157,7 @@ router.post('/:missionId/submit', authenticate, async (req, res) => {
       userId,
       missionId,
       evidenceUrl: evidenceUrl || 'https://via.placeholder.com/300',
+      description: description || null, // Guardar la descripción del usuario
     });
 
     res.status(201).json({

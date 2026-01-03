@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenWrapper from '../../layouts/ScreenWrapper';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../theme/theme';
@@ -16,6 +17,7 @@ import { pointsAPI } from '../../services/api';
 import { getErrorMessage } from '../../utils/errorHandler';
 
 export default function HistorialScreen() {
+  const navigation = useNavigation();
   const [historial, setHistorial] = useState([]);
   const [allHistorial, setAllHistorial] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,8 @@ export default function HistorialScreen() {
           icon: iconMap[t.type] || 'history',
           date: t.createdAt,
           type: t.type,
+          metadata: t.metadata, // Incluir metadata con redemptionId, qrCode, etc.
+          benefitId: t.benefitId, // ID del beneficio
         };
       });
       
@@ -122,6 +126,18 @@ export default function HistorialScreen() {
     const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     
     return `${day} ${month} ${year}, ${time}`;
+  };
+
+  const handleViewRedemption = (item) => {
+    // Navegar a la pantalla de QR con los datos del canje
+    const metadata = item.metadata || {};
+    navigation.navigate('QRCode', {
+      redemptionId: metadata.redemptionId,
+      qrCode: metadata.qrCode,
+      benefitName: metadata.benefitTitle || item.title.replace('Canje: ', ''),
+      benefitId: item.benefitId || metadata.benefitId,
+      expiresAt: metadata.expiresAt,
+    });
   };
 
   if (loading) {
@@ -219,6 +235,15 @@ export default function HistorialScreen() {
                   </View>
                 )}
               </View>
+              {item.type === 'SPENT' && item.metadata?.qrCode && (
+                <TouchableOpacity 
+                  style={styles.qrButton}
+                  onPress={() => handleViewRedemption(item)}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons name="qrcode" size={20} color={COLORS.white} />
+                </TouchableOpacity>
+              )}
             </View>
           ))}
         </View>
@@ -357,8 +382,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: 0,
+    paddingLeft: SPACING.md,
+    paddingRight: 0,
     backgroundColor: COLORS.white,
     borderRadius: 8,
     borderWidth: 1,
@@ -370,9 +396,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    marginVertical: SPACING.md,
   },
   itemContent: {
     flex: 1,
+    paddingVertical: SPACING.md,
   },
   itemTitle: {
     fontSize: 14,
@@ -393,6 +421,7 @@ const styles = StyleSheet.create({
   pointsContainer: {
     alignItems: 'flex-end',
     gap: SPACING.xs,
+    paddingVertical: SPACING.md,
   },
   itemPoints: {
     fontWeight: '700',
@@ -406,5 +435,14 @@ const styles = StyleSheet.create({
   typeBadgeText: {
     fontSize: 10,
     fontWeight: '600',
+  },
+  qrButton: {
+    width: 50,
+    alignSelf: 'stretch',
+    borderTopRightRadius: 7,
+    borderBottomRightRadius: 7,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

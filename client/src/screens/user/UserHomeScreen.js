@@ -114,6 +114,9 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
           SPENT: '#FF9800',
           TRANSFER: '#2196F3',
         };
+        
+        // Colores para los puntos en actividad reciente: verde para positivos, rojo para negativos
+        const pointsColor = t.type === 'EARNED' ? '#4CAF50' : '#F44336';
 
         const date = new Date(t.createdAt);
         const today = new Date();
@@ -146,7 +149,8 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
           title: t.description || 'Transacción',
           description: subtitle,
           points: `${t.type === 'EARNED' ? '+' : '-'}${t.amount}`,
-          color: colorMap[t.type] || '#9C27B0',
+          pointsColor: pointsColor, // Color específico para los puntos
+          color: colorMap[t.type] || '#9C27B0', // Color del icono
           icon: iconMap[t.type] || 'history',
           time: timeString,
         };
@@ -206,22 +210,6 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
     setRefreshing(false);
   };
 
-  const handleRedeemBenefit = async (benefitId, points) => {
-    if (balance < points) {
-      Alert.alert('Puntos Insuficientes', `Necesitas ${points} puntos para este beneficio`);
-      return;
-    }
-
-    try {
-      await pointsAPI.redeemBenefit(benefitId);
-      Alert.alert('Éxito', 'Beneficio canjeado correctamente');
-      await loadData();
-    } catch (error) {
-      const errorMessage = getErrorMessage(error);
-      Alert.alert('Error', errorMessage);
-    }
-  };
-
 
   if (loading) {
     return (
@@ -256,13 +244,16 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
           <View style={styles.leftColumn}>
             {/* TARJETA DE BALANCE */}
             <View style={styles.balanceCard}>
+              <View style={styles.balanceGradientOverlay} />
               <View style={styles.balanceTop}>
-                <View>
+                <View style={styles.balanceInfo}>
                   <Text style={styles.balanceLabel}>BALANCE DISPONIBLE</Text>
                   <Text style={styles.balanceAmount}>{balance.toLocaleString()}</Text>
                   <Text style={styles.balanceUnit}>Puntos</Text>
                 </View>
-                <MaterialCommunityIcons name="wallet" size={80} color="#E8F5E9" />
+                <View style={styles.walletIconContainer}>
+                  <MaterialCommunityIcons name="wallet" size={64} color="#4CAF50" />
+                </View>
               </View>
               <View style={styles.balanceActions}>
                 <TouchableOpacity
@@ -300,7 +291,7 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
                           color={COLORS.primary}
                         />
                       </View>
-                      <Text style={styles.earnCardTitle}>{option.title}</Text>
+                      <Text style={styles.earnCardTitle} numberOfLines={1} ellipsizeMode="tail">{option.title}</Text>
                       <Text style={styles.earnCardDesc}>{option.description}</Text>
                       <View style={styles.earnCardFooter}>
                         <Text style={styles.earnCardPoints}>{option.points}</Text>
@@ -349,11 +340,11 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
                 ) : (
                   activities.map((activity) => (
                     <View key={activity.id} style={styles.activityItem}>
-                      <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                      <View style={[styles.activityIcon, { backgroundColor: activity.pointsColor + '20' }]}>
                         <MaterialCommunityIcons
                           name={activity.icon}
                           size={18}
-                          color={activity.color}
+                          color={activity.pointsColor}
                         />
                       </View>
                       <View style={styles.activityContent}>
@@ -361,7 +352,7 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
                         <Text style={styles.activityDesc}>{activity.description}</Text>
                         <Text style={styles.activityTime}>{activity.time}</Text>
                       </View>
-                      <Text style={[styles.activityPoints, { color: activity.color }]}>
+                      <Text style={[styles.activityPoints, { color: activity.pointsColor }]}>
                         {activity.points}
                       </Text>
                     </View>
@@ -377,7 +368,12 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
         {/* BENEFICIOS DISPONIBLES */}
         {benefits.length > 0 && (
           <View style={styles.benefitsSection}>
-            <Text style={styles.sectionTitle}>Beneficios Disponibles</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Beneficios Disponibles</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Benefits')}>
+                <Text style={styles.seeAllText}>Ver todos →</Text>
+              </TouchableOpacity>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -387,28 +383,20 @@ export default function UserHomeScreen({ navigation: navigationProp }) {
                 <TouchableOpacity
                   key={benefit.id}
                   style={styles.benefitCard}
-                  onPress={() => {
-                    if (benefit.redeemable) {
-                      handleRedeemBenefit(benefit.id, benefit.pointsCost);
-                    }
-                  }}
-                  disabled={!benefit.redeemable}
+                  onPress={() => navigation.navigate('Benefits')}
+                  activeOpacity={0.7}
                 >
                   <View style={styles.benefitIcon}>
                     <MaterialCommunityIcons name="gift" size={24} color={COLORS.primary} />
                   </View>
-                  <Text style={styles.benefitName}>{benefit.name}</Text>
-                  <Text style={styles.benefitDesc}>{benefit.description}</Text>
+                  <Text style={styles.benefitName} numberOfLines={1} ellipsizeMode="tail">{benefit.name}</Text>
+                  <Text style={styles.benefitDesc} numberOfLines={2}>{benefit.description}</Text>
                   <View style={styles.benefitFooter}>
                     <Text style={styles.benefitCost}>{benefit.pointsCost} pts</Text>
-                    {benefit.redeemable && (
-                      <TouchableOpacity
-                        style={styles.redeemBtn}
-                        onPress={() => handleRedeemBenefit(benefit.id, benefit.pointsCost)}
-                      >
-                        <Text style={styles.redeemBtnText}>Canjear</Text>
-                      </TouchableOpacity>
-                    )}
+                    <View style={styles.viewDetailsBtn}>
+                      <Text style={styles.viewDetailsBtnText}>Ver detalles</Text>
+                      <MaterialCommunityIcons name="arrow-right" size={14} color={COLORS.primary} />
+                    </View>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -481,17 +469,44 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.light,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#4CAF50', // Borde verde brillante
     padding: SPACING.lg,
     marginBottom: Platform.OS === 'web' ? 0 : SPACING.md,
+    // Sombra pronunciada y efecto fluorescente
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 8px 32px rgba(76, 175, 80, 0.25), 0 0 20px rgba(76, 175, 80, 0.15)',
+    } : {
+      shadowColor: '#4CAF50',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 16,
+      elevation: 12,
+    }),
+    // Gradiente sutil de fondo (simulado con overlay)
+    position: 'relative',
+    overflow: 'hidden',
   },
   balanceTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: SPACING.lg,
+    zIndex: 1,
+  },
+  balanceInfo: {
+    zIndex: 1,
+  },
+  walletIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(76, 175, 80, 0.2)',
   },
   balanceLabel: {
     fontSize: 10,
@@ -526,6 +541,16 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     backgroundColor: COLORS.success,
+    ...(Platform.OS === 'web' ? {
+      background: 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)',
+      boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+    } : {
+      shadowColor: '#4CAF50',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    }),
   },
   primaryBtnText: {
     color: COLORS.white,
@@ -672,6 +697,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.light,
     padding: SPACING.md,
     alignItems: 'center',
+    justifyContent: 'space-between', // Distribuir espacio uniformemente
   },
   earnIconContainer: {
     width: 56,
@@ -695,6 +721,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: SPACING.md,
     lineHeight: 14,
+    minHeight: 28, // 2 líneas mínimo para alineación
+    flex: 1, // Ocupa el espacio disponible
   },
   earnCardFooter: {
     flexDirection: 'row',
@@ -709,11 +737,21 @@ const styles = StyleSheet.create({
   benefitsSection: {
     marginBottom: SPACING.xl,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: SPACING.md,
+  },
+  seeAllText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   benefitsScroll: {
     paddingRight: SPACING.md,
@@ -747,6 +785,7 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginBottom: SPACING.md,
     lineHeight: 13,
+    minHeight: 40, // Altura fija para alineación consistente
   },
   benefitFooter: {
     flexDirection: 'row',
@@ -758,15 +797,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
   },
-  redeemBtn: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: 4,
+  viewDetailsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
-  redeemBtnText: {
-    color: COLORS.white,
-    fontSize: 9,
+  viewDetailsBtnText: {
+    color: COLORS.primary,
+    fontSize: 10,
     fontWeight: '600',
   },
   logoutSection: {

@@ -136,8 +136,8 @@ export const merchantAPI = {
 export const missionsAPI = {
   getAvailable: () => api.get('/missions'),
   getById: (id) => api.get(`/missions/${id}`),
-  submitEvidence: (missionId, evidenceUrl) => 
-    api.post(`/missions/${missionId}/submit`, { evidenceUrl }),
+  submitEvidence: (missionId, evidenceUrl, description = null) => 
+    api.post(`/missions/${missionId}/submit`, { evidenceUrl, description }),
 };
 
 // Servicios de admin

@@ -243,7 +243,7 @@ function WebLayout() {
           <EarnScreen navigation={earnNavigationMock} />
         </View>
         <View style={activeTab === 'Historial' ? styles.activeScreen : styles.hiddenScreen}>
-          <HistorialScreen />
+          <HistorialStack />
         </View>
         <View style={activeTab === 'Profile' ? styles.activeScreen : styles.hiddenScreen}>
           <ProfileScreen />
@@ -432,6 +432,37 @@ function BenefitsStack() {
 }
 
 // ============================================================================
+// COMPONENTE: Historial Stack
+// ============================================================================
+function HistorialStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: COLORS.primary,
+        },
+        headerTintColor: COLORS.white,
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="HistorialMain"
+        component={HistorialScreen}
+        options={{ title: 'Mi Historial' }}
+      />
+      <Stack.Screen
+        name="QRCode"
+        component={QRCodeScreen}
+        options={{ title: 'Código QR' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// ============================================================================
 // COMPONENTE: Mobile Layout (Bottom Tabs)
 // ============================================================================
 function MobileLayout() {
@@ -486,6 +517,11 @@ function MobileLayout() {
         name="Earn"
         component={EarnStack}
         options={{ headerShown: false, title: 'Gana Puntos' }}
+      />
+      <Tab.Screen
+        name="Historial"
+        component={HistorialStack}
+        options={{ headerShown: false, title: 'Historial' }}
       />
       <Tab.Screen
         name="Profile"

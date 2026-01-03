@@ -37,9 +37,12 @@ export const registerSchema = z.object({
   path: ['confirmPassword'],
 });
 
-// Esquema para login
+// Esquema para login (sin validación de formato, solo que existan los campos)
 export const loginSchema = z.object({
-  email: emailSchema,
+  email: z
+    .string({ required_error: 'El email es requerido' })
+    .email({ message: 'Email inválido' })
+    .trim(),
   
   password: z
     .string({ required_error: 'La contraseña es requerida' })

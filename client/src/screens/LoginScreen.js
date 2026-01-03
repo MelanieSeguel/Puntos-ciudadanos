@@ -34,11 +34,8 @@ export default function LoginScreen({ navigation }) {
       }
     }
 
-    if (touched.password) {
-      const passwordValidation = validators.validatePassword(password);
-      if (!passwordValidation.valid) {
-        newErrors.password = passwordValidation.error;
-      }
+    if (touched.password && !password) {
+      newErrors.password = 'La contraseña es requerida';
     }
 
     setErrors(newErrors);
@@ -50,10 +47,14 @@ export default function LoginScreen({ navigation }) {
 
     // Validar campos
     const emailValidation = validators.validateEmail(email);
-    const passwordValidation = validators.validatePassword(password);
-
-    if (!emailValidation.valid || !passwordValidation.valid) {
-      Alert.alert('Error de Validación', 'Por favor completa correctamente los campos');
+    
+    if (!emailValidation.valid) {
+      Alert.alert('Error de Validación', 'Por favor ingresa un email válido');
+      return;
+    }
+    
+    if (!password) {
+      Alert.alert('Error de Validación', 'Por favor ingresa tu contraseña');
       return;
     }
 

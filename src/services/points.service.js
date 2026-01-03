@@ -31,6 +31,8 @@ export const getUserTransactions = async (userId, limit = 10, offset = 0) => {
       amount: true,
       description: true,
       createdAt: true,
+      metadata: true,
+      benefitId: true,
     },
     orderBy: {
       createdAt: 'desc',
